@@ -19,34 +19,35 @@ import com.handen.memes.dummy.DummyContent.DummyItem;
  * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
  * interface.
  */
-public class GroupListFragment extends Fragment {
+public class PostListFragment extends Fragment {
 
+    // TODO: Customize parameter argument names
+    private static final String ARG_COLUMN_COUNT = "column-count";
     // TODO: Customize parameters
     private int mColumnCount = 1;
-
     private OnListFragmentInteractionListener mListener;
 
-    public static GroupListFragment newInstance() {
-        GroupListFragment groupListFragment = new GroupListFragment();
-        return groupListFragment;
+
+    public PostListFragment() {
     }
 
-    /**
-     * Mandatory empty constructor for the fragment manager to instantiate the
-     * fragment (e.g. upon screen orientation changes).
-     */
-    public GroupListFragment() {
+    public static PostListFragment newInstance() {
+        PostListFragment fragment = new PostListFragment();
+        return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (getArguments() != null) {
+            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_group_list, container, false);
+        View view = inflater.inflate(R.layout.fragment_post_list, container, false);
 
         // Set the adapter
         if (view instanceof RecyclerView) {
@@ -58,7 +59,7 @@ public class GroupListFragment extends Fragment {
             else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new GroupAdapter(DummyContent.ITEMS, mListener));
+            recyclerView.setAdapter(new PostAdapter(DummyContent.ITEMS, mListener));
         }
         return view;
     }
@@ -70,6 +71,7 @@ public class GroupListFragment extends Fragment {
             mListener = (OnListFragmentInteractionListener) context;
         }
         else {
+
         }
     }
 
