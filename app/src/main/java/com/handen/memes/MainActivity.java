@@ -1,5 +1,6 @@
 package com.handen.memes;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -10,6 +11,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
 import com.handen.memes.database.Database;
+import com.vk.sdk.VKAccessToken;
+import com.vk.sdk.VKCallback;
+import com.vk.sdk.VKSdk;
+import com.vk.sdk.api.VKApi;
+import com.vk.sdk.api.VKApiConst;
+import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.VKParameters;
+import com.vk.sdk.api.VKRequest;
+import com.vk.sdk.api.VKResponse;
 
 import java.util.ArrayList;
 
@@ -23,6 +33,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(!VKSdk.isLoggedIn())
+            VKSdk.login(MainActivity.this, null);
+
+        VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, -460389,
+                                           VKApiConst.COUNT, 10
+                                                ));
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                //Do complete stuff
+
+            }
+            @Override
+            public void onError(VKError error) {
+                //Do error stuff
+            }
+            @Override
+            public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+                //I don't really believe in progress
+            }
+        });
 
         for(int i = 0; i < 20; i ++) {
             Group group = new Group(i, "ГРУППА № " + i, i % 2 == 0);
@@ -84,5 +115,21 @@ public class MainActivity extends AppCompatActivity {
                         return false;
                     }
                 });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (!VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
+            @Override
+            public void onResult(VKAccessToken res) {
+                // Пользователь успешно авторизовался
+            }
+            @Override
+            public void onError(VKError error) {
+                // Произошла ошибка авторизации (например, пользователь запретил авторизацию)
+            }
+        })) {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 }

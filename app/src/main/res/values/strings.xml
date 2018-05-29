@@ -1,4 +1,7 @@
 <resources>
+
+    <integer name="com_vk_sdk_AppId">6493842</integer>
+
     <string name="app_name">Memes</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
