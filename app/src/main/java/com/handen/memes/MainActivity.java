@@ -4,9 +4,12 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.PagerAdapter;import android.support.v4.view.ViewPager;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+
+import com.handen.memes.database.Database;
 
 import java.util.ArrayList;
 
@@ -20,6 +23,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        for(int i = 0; i < 20; i ++) {
+            Group group = new Group(i, "ГРУППА № " + i, i % 2 == 0);
+            Database.get().addGroup(group);
+        }
 
         ArrayList<Fragment> fragments = new ArrayList<Fragment>();
         fragments.add(GroupListFragment.newInstance());
@@ -44,8 +52,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else {
                     bottomNavigationView.getMenu().getItem(0).setChecked(false);
-
-
                 }
 
                 bottomNavigationView.getMenu().getItem(position).setChecked(true);
@@ -79,8 +85,4 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
-
-
-
-
 }

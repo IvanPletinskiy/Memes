@@ -3,15 +3,16 @@ package com.handen.memes;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.handen.memes.dummy.DummyContent;
+import com.handen.memes.database.Database;
 import com.handen.memes.dummy.DummyContent.DummyItem;
+
+import java.util.ArrayList;
 
 /**
  * A fragment representing a list of Items.
@@ -26,9 +27,10 @@ public class GroupListFragment extends Fragment {
 
     private OnListFragmentInteractionListener mListener;
 
+    private ArrayList<Group> groups;
+
     public static GroupListFragment newInstance() {
-        GroupListFragment groupListFragment = new GroupListFragment();
-        return groupListFragment;
+        return new GroupListFragment();
     }
 
     /**
@@ -36,6 +38,7 @@ public class GroupListFragment extends Fragment {
      * fragment (e.g. upon screen orientation changes).
      */
     public GroupListFragment() {
+        groups = Database.get().getGroupsNames();
     }
 
     @Override
@@ -47,18 +50,11 @@ public class GroupListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_group_list, container, false);
-
-        // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
             RecyclerView recyclerView = (RecyclerView) view;
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            }
-            else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
-            recyclerView.setAdapter(new GroupAdapter(DummyContent.ITEMS, mListener));
+            recyclerView.setLayoutManager(new LinearLayoutManager(context));
+            recyclerView.setAdapter(new GroupAdapter(groups, mListener));
         }
         return view;
     }
