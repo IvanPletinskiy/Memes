@@ -44,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else {
                     bottomNavigationView.getMenu().getItem(0).setChecked(false);
+
+
                 }
 
                 bottomNavigationView.getMenu().getItem(position).setChecked(true);
