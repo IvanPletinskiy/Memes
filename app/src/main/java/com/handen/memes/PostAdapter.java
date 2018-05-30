@@ -1,15 +1,15 @@
 package com.handen.memes;
 
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ImageView;
 
 import com.handen.memes.PostListFragment.OnListFragmentInteractionListener;
 import com.handen.memes.dummy.DummyContent.DummyItem;
-
-import java.util.List;
 
 /**
  * {@link RecyclerView.Adapter} that can display a {@link DummyItem} and makes a call to the
@@ -18,11 +18,13 @@ import java.util.List;
  */
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
 
-    private final List<DummyItem> mValues;
     private final OnListFragmentInteractionListener mListener;
+    PostDownloader<PostAdapter.ViewHolder> mPostDownloader;
 
-    public PostAdapter(List<DummyItem> items, OnListFragmentInteractionListener listener) {
-        mValues = items;
+    Bitmap mBitmap;
+
+    public PostAdapter(PostDownloader<PostAdapter.ViewHolder> postDownloader, OnListFragmentInteractionListener listener) {
+        mPostDownloader = postDownloader;
         mListener = listener;
     }
 
@@ -32,11 +34,25 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
         return new ViewHolder(view);
     }
 
+
+
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
-        holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).id);
-        holder.mContentView.setText(mValues.get(position).content);
+        Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+        holder.bindDrawable(placeholder);
+
+        mPostDownloader.addToQueue(holder, position);
+       // mPostDownloader.addToQueue(holder);
+   //     Bitmap bitmap = PostDownloader.downloadImage("https://pp.userapi.com/c834400/v834400925/150fde/iLhIi5RgdFw.jpg");
+
+/*        try {
+            Thread.sleep(250);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+*/
+ //       holder.imageView.setImageBitmap(bitmap);
 
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -44,7 +60,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
                 if (null != mListener) {
                     // Notify the active callbacks interface (the activity, if the
                     // fragment is attached to one) that an item has been selected.
-                    mListener.onListFragmentInteraction(holder.mItem);
+
                 }
             }
         });
@@ -52,25 +68,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return mValues.size();
+       return  1; //TODO ВНИМАНИЕ!
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        public final TextView mIdView;
-        public final TextView mContentView;
-        public DummyItem mItem;
+        public ImageView imageView;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.id);
-            mContentView = (TextView) view.findViewById(R.id.content);
+            imageView = view.findViewById(R.id.image);
         }
-
-        @Override
-        public String toString() {
-            return super.toString() + " '" + mContentView.getText() + "'";
+        public void bindDrawable(Drawable drawable) {
+            imageView.setImageDrawable(drawable);
         }
     }
 }

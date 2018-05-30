@@ -20,7 +20,7 @@ import static com.handen.memes.database.Schema.GroupsTable.TABLENAME;
 
 public class Database {
     private static Database database;
-    private SQLiteDatabase mDatabase;
+    private static SQLiteDatabase mDatabase;
 
     public static Database get() {
         if(database == null)
@@ -32,7 +32,7 @@ public class Database {
         mDatabase = new DatabaseHelper(context.getApplicationContext()).getWritableDatabase();
     }
 
-    public ArrayList<Group> getGroupsNames() {
+    public static ArrayList<Group> getGroupsNames() {
         ArrayList<Group> ret = new ArrayList<>();
         String[] columns = new String[2];
         columns[0] = NAME;

@@ -14,12 +14,7 @@ import com.handen.memes.database.Database;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKSdk;
-import com.vk.sdk.api.VKApi;
-import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;
-import com.vk.sdk.api.VKParameters;
-import com.vk.sdk.api.VKRequest;
-import com.vk.sdk.api.VKResponse;
 
 import java.util.ArrayList;
 
@@ -36,28 +31,20 @@ public class MainActivity extends AppCompatActivity {
         if(!VKSdk.isLoggedIn())
             VKSdk.login(MainActivity.this, null);
 
-        VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, -460389,
-                                           VKApiConst.COUNT, 10
-                                                ));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                //Do complete stuff
+        if(Database.get().getGroupsNames().size() == 0) {
+            String[] defaultArray = getResources().getStringArray(R.array.defaultGroups);
 
+            for(String s : defaultArray) {
+                Group group = new Group(
+                        Integer.parseInt(s.split(";")[0]),
+                        s.split(";")[1],
+                        true);
+                Database.get().addGroup(group);
             }
-            @Override
-            public void onError(VKError error) {
-                //Do error stuff
-            }
-            @Override
-            public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-                //I don't really believe in progress
-            }
-        });
-
-        for(int i = 0; i < 20; i ++) {
-            Group group = new Group(i, "ГРУППА № " + i, i % 2 == 0);
-            Database.get().addGroup(group);
+            //for(int i = 0; i < 20; i ++) {
+             //   Group group = new Group(i, "ГРУППА № " + i, i % 2 == 0);
+           //     Database.get().addGroup(group);
+            //}
         }
 
         ArrayList<Fragment> fragments = new ArrayList<Fragment>();
@@ -115,6 +102,9 @@ public class MainActivity extends AppCompatActivity {
                         return false;
                     }
                 });
+
+
+
     }
 
     @Override

@@ -1,16 +1,17 @@
 package com.handen.memes;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.handen.memes.dummy.DummyContent;
 import com.handen.memes.dummy.DummyContent.DummyItem;
 
 /**
@@ -21,14 +22,11 @@ import com.handen.memes.dummy.DummyContent.DummyItem;
  */
 public class PostListFragment extends Fragment {
 
-    // TODO: Customize parameter argument names
-    private static final String ARG_COLUMN_COUNT = "column-count";
-    // TODO: Customize parameters
-    private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-
+    PostDownloader<PostAdapter.ViewHolder> postDownloader;
 
     public PostListFragment() {
+
     }
 
     public static PostListFragment newInstance() {
@@ -40,9 +38,19 @@ public class PostListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (getArguments() != null) {
-            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
-        }
+        Handler responseHandler = new Handler();
+        postDownloader = new PostDownloader<>(responseHandler);
+        postDownloader.setPostDownloaderListener(
+                new PostDownloader.PostDownloaderListener<PostAdapter.ViewHolder>() {
+                    @Override
+                    public void onPostDownloaded(PostAdapter.ViewHolder target, Bitmap bitmap) {
+                        target.bindDrawable(new BitmapDrawable(getResources(), bitmap));
+                    }
+                });
+
+ //       postDownloader = new PostDownloader<>();
+        postDownloader.start();
+        postDownloader.getLooper();
     }
 
     @Override
@@ -53,13 +61,15 @@ public class PostListFragment extends Fragment {
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
             RecyclerView recyclerView = (RecyclerView) view;
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            }
-            else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
-            recyclerView.setAdapter(new PostAdapter(DummyContent.ITEMS, mListener));
+            recyclerView.setLayoutManager(new LinearLayoutManager(context));
+      //      Bitmap bitmap = PostDownloader.addToQueue();
+       //     try {
+       //         Thread.sleep(550);
+     //       }
+     //       catch (InterruptedException e) {
+     //           e.printStackTrace();
+     //       }
+            recyclerView.setAdapter(new PostAdapter(postDownloader, mListener));
         }
         return view;
     }
@@ -79,6 +89,18 @@ public class PostListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        postDownloader.quit();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        postDownloader.clearQueue();
     }
 
     /**
