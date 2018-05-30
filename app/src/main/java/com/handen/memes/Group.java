@@ -24,6 +24,10 @@ public class Group {
         this.isSelected = isSelected;
     }
 
+    public Group(int id) {
+        this.id = id;
+    }
+
     public int getId() {
         return id;
     }

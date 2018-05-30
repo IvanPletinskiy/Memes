@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager viewPager;
     MenuItem prevMenuItem;
     BottomNavigationView bottomNavigationView;
+    Preferences preferences = new Preferences();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

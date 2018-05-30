@@ -34,8 +34,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
         return new ViewHolder(view);
     }
 
-
-
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
@@ -68,7 +66,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
 
     @Override
     public int getItemCount() {
-       return  1; //TODO ВНИМАНИЕ!
+       return  10; //TODO ВНИМАНИЕ!
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

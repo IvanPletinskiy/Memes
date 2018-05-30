@@ -10,6 +10,7 @@ import com.handen.memes.Group;
 
 import java.util.ArrayList;
 
+import static com.handen.memes.database.Schema.GroupsTable.ID;
 import static com.handen.memes.database.Schema.GroupsTable.NAME;
 import static com.handen.memes.database.Schema.GroupsTable.SELECTED;
 import static com.handen.memes.database.Schema.GroupsTable.TABLENAME;
@@ -53,6 +54,32 @@ public class Database {
             String name = cursor.getString(0);
             boolean isSelected = cursor.getInt(1) == 1;
             Group group = new Group(name, isSelected);
+            ret.add(group);
+            cursor.moveToNext();
+        }
+        cursor.close();
+        return  ret;
+    }
+
+    public static ArrayList<Group> getGroupsIds() {
+        ArrayList<Group> ret = new ArrayList<>();
+        String[] columns = new String[1];
+        columns[0] = ID;
+        Cursor cursor = mDatabase.query(false,
+                TABLENAME,
+                columns,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        cursor.moveToFirst();
+        for(int i = 0; i < cursor.getCount(); i ++) {
+            int id = cursor.getInt(0);
+            Group group = new Group(id);
             ret.add(group);
             cursor.moveToNext();
         }

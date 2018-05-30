@@ -9,6 +9,9 @@
 
     <string-array name="defaultGroups">
         <item>"-460389;БОРЩ"</item>
+        <item>"-57846937;МДК"</item>
+        <item>"-45745333;4ch"</item>
+        <item>"-65596623;FTP"</item>
     </string-array>
 
 </resources>

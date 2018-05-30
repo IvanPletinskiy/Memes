@@ -30,15 +30,27 @@ public class Post{
                 postObject.getInt("id"),
                 postObject.getString("text"),
                 postObject.getLong("date"),
-                getPostImagePath(postObject)
+                getPostImagePath(postObject),
+                countLikes(postObject),
+                countReposts(postObject)
                 );
     }
 
-    public Post(int id, String text, long postMillis, String imageUrl) {
+    private static int countReposts(JSONObject postObject) throws Exception {
+        return postObject.getJSONObject("reposts").getInt("count");
+    }
+
+    private static int countLikes(JSONObject postObject) throws Exception{
+        return postObject.getJSONObject("likes").getInt("count");
+    }
+
+    public Post(int id, String text, long postMillis, String imageUrl, int likes, int reposts) {
         this.id = id;
         this.text = text;
         this.postMillis = postMillis;
         this.imageUrl = imageUrl;
+        this.likes = likes;
+        this.reposts = reposts;
     }
 
     public static String getPostImagePath(JSONObject postObject) throws Exception {
@@ -76,5 +88,17 @@ public class Post{
             sum += c;
         }
         return sum;
+    }
+
+    public int getLikes() {
+        return likes;
+    }
+
+    public int getReposts() {
+        return reposts;
+    }
+
+    public long getPostMillis() {
+        return postMillis;
     }
 }

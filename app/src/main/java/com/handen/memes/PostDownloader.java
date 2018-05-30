@@ -15,18 +15,13 @@ import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -39,7 +34,7 @@ public class PostDownloader<T> extends HandlerThread {
     private static Date period;
     private Date currentDate;
 
-    private static int POSTQUERYCOUNT = 25;
+    private static int POSTQUERYCOUNT = 100;
 
     private static final int MESSSAGE_DOWNLOAD = 0;
     private Handler mRequestHandler;
@@ -115,59 +110,97 @@ public class PostDownloader<T> extends HandlerThread {
          */
         final long endMillis = currentMillis - offset * period;
 
-        ArrayList<Group> groups = Database.getGroupsNames();
+        ArrayList<Group> groups = Database.getGroupsIds();
         for(Group g : groups) {
             final boolean[] isDone = {false};
             final int[] i = {0};
-            while (!isDone[0]) {
-                VKRequest request = VKApi.wall().get(VKParameters.from(
-                        VKApiConst.OWNER_ID, g.getId(),
-                        VKApiConst.COUNT, 25,
-                        VKApiConst.OFFSET, POSTQUERYCOUNT * i[0]));
-                request.executeWithListener(new VKRequest.VKRequestListener() {
-                    @Override
-                    public void onComplete(VKResponse resp) {
-                        try {
-                            JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
-                            for(int j = 0; j < postsArray.length(); j++) {
-                                JSONObject postObject = postsArray.getJSONObject(j);
-                                long postDate = postObject.getLong("date");
-                                if(postDate > endMillis)
-                                    continue;
-                                if(postDate < beginMillis) {
-                                    isDone[0] = true;
-                                    break;
+          //  boolean isResponseReceived = true;
+//            while (!isDone[0]) {
+      //          if(isResponseReceived == true) {
+     //               isResponseReceived = false;
+                    VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, g.getId(), VKApiConst.COUNT, POSTQUERYCOUNT, VKApiConst.OFFSET, POSTQUERYCOUNT * i[0]));
+                    request.executeWithListener(new VKRequest.VKRequestListener() {
+                        @Override
+                        public void onComplete(VKResponse resp) {
+                            try {
+                                JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
+                                for (int j = 0; j < postsArray.length(); j++) {
+                                    JSONObject postObject = postsArray.getJSONObject(j);
+                                    long postDate = postObject.getLong("date");
+                                    if (postDate > endMillis)
+                                        continue;
+                                    if (postDate < beginMillis) {
+//                                        isDone[0] = true;
+                                        return;
+                                    }
+                                    if (checkPost(postObject)) {
+                                        postsPool.add(Post.fromJSON(postObject));
+                                    }
                                 }
-                                if(checkPost(postObject)) {
-                                    postsPool.add(Post.fromJSON(postObject));
-                                }
-                            }
-                            if(!isDone[0]) {
-                                i[0]++;
-                            }
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-                //i++;
-            }
-        }
+//                                if (!isDone[0]) {
+//                                    i[0]++;
+//                                }
 
-        Collections.sort(postsPool, new Comparator<Post>() {
+
+                                double maxValue = 0;
+                                int maxPostIndex = 0;
+                                for(int i = 0; i < postsPool.size(); i ++) {
+                                    long millis = new Date().getTime();
+                                    Post post = postsPool.get(i);
+                                    long post1Millis = millis - post.getPostMillis();
+
+                                    double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
+
+                                    if(i == 0)
+                                        maxValue = postValue;
+                                    if(postValue > maxValue)
+                                        maxPostIndex = i;
+                                }
+
+                                final Bitmap bitmap = downloadImage(postsPool.get(maxPostIndex).imageUrl);
+                                mResponseHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (!mRequestMap.get(target).equals(offset)) {
+                                            return;
+                                        }
+                                        mRequestMap.remove(target);
+                                        postDownloaderListener.onPostDownloaded(target, bitmap);
+                                    }
+                                });
+
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+   //                 isResponseReceived = true;
+   //             }
+   //             else {
+    // //               try {
+    //                    Thread.sleep(50);
+    //                }
+   //                 catch (InterruptedException e) {
+   //                     e.printStackTrace();
+   //                 }
+                }
+
+                //i++;
+     //       }
+       // }
+
+     /*   Collections.sort(postsPool, new Comparator<Post>() {
             @Override
             public int compare(Post p1, Post p2) {
                 long currentMillis = new Date().getTime();
 
-                long post1Millis = currentMillis - p1.postDate;
-                long post2Millis = currentMillis - p2.postDate;
+                long post1Millis = currentMillis - p1.getPostMillis();
+                long post2Millis = currentMillis - p2.getPostMillis();
 
-                double post1Value = (((p1.likes + 1) * 100) + ((p1.reposts + 1) * 500) / post1Millis);
-                double post2Value = (((p2.likes + 1) * 100) + ((p2.reposts + 1) * 500) / post2Millis);
+                double post1Value = (((p1.getLikes() + 1) * 100) + ((p1.getReposts() + 1) * 500) / post1Millis);
+                double post2Value = (((p2.getLikes() + 1) * 100) + ((p2.getReposts() + 1) * 500) / post2Millis);
 
-                p1.setValue(post1Value);
-                p2.setValue(post2Value);
                 if (post1Value > post2Value)
                     return -1;
                 else if (post2Value > post1Value)
@@ -175,7 +208,8 @@ public class PostDownloader<T> extends HandlerThread {
                 else
                     return 0;
             }
-        }););
+        });
+        */
 
      /*   VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, -460389, VKApiConst.COUNT, 1));
         request.executeWithListener(new VKRequest.VKRequestListener() {
@@ -222,7 +256,7 @@ public class PostDownloader<T> extends HandlerThread {
         return true; //TODO Сделать checkPost, проверять на рекламу, ссылки, слова текста и т.д. кол-во картинок
     }
 
-    public String getPostImagePath(JSONObject attachment) throws JSONException {
+   /* public String getPostImagePath(JSONObject attachment) throws JSONException {
         //Set<String> set = attachment.getJSONObject("photo").().keySet();
         Set<String> set = new HashSet<>();
 
@@ -254,6 +288,7 @@ public class PostDownloader<T> extends HandlerThread {
         }
         return sum;
     }
+    */
 
     public Bitmap downloadImage(String path) {
         try {
