@@ -1,14 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.RecyclerView
+
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/list"
-    android:name="com.handen.memes.GroupListFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_marginLeft="16dp"
-    android:layout_marginRight="16dp"
-    app:layoutManager="LinearLayoutManager"
-    tools:context="com.handen.memes.GroupListFragment"
-    tools:listitem="@layout/fragment_group"/>
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/addWithSearch"
+        android:gravity="center"
+        android:layout_marginBottom="14dp"
+        android:textSize="22sp"
+        android:text="Добавить с помощью поиска"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/addWithLink"
+        android:gravity="center"
+        android:textSize="22sp"
+        android:text="Добавить с помощью ссылки"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list"
+        android:name="com.handen.memes.GroupListFragment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        app:layoutManager="LinearLayoutManager"
+        tools:context="com.handen.memes.GroupListFragment"
+        tools:listitem="@layout/fragment_group"/>
+
+</LinearLayout>

@@ -97,198 +97,95 @@ public class PostDownloader<T> extends HandlerThread {
     }
 
     private void handleRequest(final T target) {
-        final ArrayList<Post> postsPool = new ArrayList<>();
+        final ArrayList<Post> postsPool = new ArrayList<>(); //Список постов за период времени из ВСЕХ групп, отсюда выбирается лучший пост
         final int offset = mRequestMap.get(target);
         long currentMillis = new Date().getTime();
         long period = Preferences.getPeriod();
         /**
-            Стартовая дата, например 18:00
+         Стартовая дата, например 18:00
          */
         final long beginMillis = currentMillis - (offset + 1) * period;
         /**
-            Конечная дата, например 18:30
+         Конечная дата, например 18:30
          */
         final long endMillis = currentMillis - offset * period;
 
-        ArrayList<Group> groups = Database.getGroupsIds();
-        for(Group g : groups) {
-            final boolean[] isDone = {false};
+        ArrayList<Group> groups = Database.getGroupsIds(); //Список груп, откуда берутся посты
+        for (Group g : groups) { //Для каждой группы делаем запрос
             final int[] i = {0};
-          //  boolean isResponseReceived = true;
-//            while (!isDone[0]) {
-      //          if(isResponseReceived == true) {
-     //               isResponseReceived = false;
-                    VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, g.getId(), VKApiConst.COUNT, POSTQUERYCOUNT, VKApiConst.OFFSET, POSTQUERYCOUNT * i[0]));
-                    request.executeWithListener(new VKRequest.VKRequestListener() {
-                        @Override
-                        public void onComplete(VKResponse resp) {
-                            try {
-                                JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
-                                for (int j = 0; j < postsArray.length(); j++) {
-                                    JSONObject postObject = postsArray.getJSONObject(j);
-                                    long postDate = postObject.getLong("date");
-                                    if (postDate > endMillis)
-                                        continue;
-                                    if (postDate < beginMillis) {
-//                                        isDone[0] = true;
-                                        return;
-                                    }
+            VKRequest request = VKApi.wall().get(VKParameters.from(
+                    VKApiConst.OWNER_ID, g.getId(), //Владелец группы
+                    VKApiConst.COUNT, POSTQUERYCOUNT, //Кол-во постов
+                    VKApiConst.OFFSET, POSTQUERYCOUNT * i[0]));
+            request.executeWithListener(new VKRequest.VKRequestListener() { //Выполняем запрос, ответ приходит спустя время в onComplete
+                @Override
+                public void onComplete(VKResponse resp) {
+                    try {
+                        JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
+                        //Каждый пост мы проверяем, подходит ли он и добавляем в postsPool
+                        for (int j = 0; j < postsArray.length(); j++) {
+                            JSONObject postObject = postsArray.getJSONObject(j);
+                            if (postObject.has("is_pinned")) {
+                                if (postObject.getInt("is_pinned") == 1)
+                                    continue;
+                            }
+                            //Умножаем на 1000, т.к. ВК возвращает секунды, а не милли
+                            long postDate = postObject.getLong("date") * 1000;
+                            if (postDate > endMillis) {
+                                continue;
+                            }
+                            else {
+                                if (postDate < beginMillis) {
+                                    break;
+                                }
+                                else {
                                     if (checkPost(postObject)) {
                                         postsPool.add(Post.fromJSON(postObject));
                                     }
                                 }
-//                                if (!isDone[0]) {
-//                                    i[0]++;
-//                                }
-
-
-                                double maxValue = 0;
-                                int maxPostIndex = 0;
-                                for(int i = 0; i < postsPool.size(); i ++) {
-                                    long millis = new Date().getTime();
-                                    Post post = postsPool.get(i);
-                                    long post1Millis = millis - post.getPostMillis();
-
-                                    double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
-
-                                    if(i == 0)
-                                        maxValue = postValue;
-                                    if(postValue > maxValue)
-                                        maxPostIndex = i;
-                                }
-
-                                final Bitmap bitmap = downloadImage(postsPool.get(maxPostIndex).imageUrl);
-                                mResponseHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (!mRequestMap.get(target).equals(offset)) {
-                                            return;
-                                        }
-                                        mRequestMap.remove(target);
-                                        postDownloaderListener.onPostDownloaded(target, bitmap);
-                                    }
-                                });
-
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
                             }
                         }
-                    });
-   //                 isResponseReceived = true;
-   //             }
-   //             else {
-    // //               try {
-    //                    Thread.sleep(50);
-    //                }
-   //                 catch (InterruptedException e) {
-   //                     e.printStackTrace();
-   //                 }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
+            });
+        }
 
-                //i++;
-     //       }
-       // }
+        if (postsPool.size() != 0) { //Выбираем лучший пост и скачиваем его
+            double maxValue = 0;
+            int maxPostIndex = 0;
+            for (int i = 0; i < postsPool.size(); i++) {
+                long millis = new Date().getTime();
+                Post post = postsPool.get(i);
+                long post1Millis = millis - post.getPostMillis();
 
-     /*   Collections.sort(postsPool, new Comparator<Post>() {
-            @Override
-            public int compare(Post p1, Post p2) {
-                long currentMillis = new Date().getTime();
+                double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
 
-                long post1Millis = currentMillis - p1.getPostMillis();
-                long post2Millis = currentMillis - p2.getPostMillis();
-
-                double post1Value = (((p1.getLikes() + 1) * 100) + ((p1.getReposts() + 1) * 500) / post1Millis);
-                double post2Value = (((p2.getLikes() + 1) * 100) + ((p2.getReposts() + 1) * 500) / post2Millis);
-
-                if (post1Value > post2Value)
-                    return -1;
-                else if (post2Value > post1Value)
-                    return 1;
-                else
-                    return 0;
+                if (i == 0)
+                    maxValue = postValue;
+                if (postValue > maxValue)
+                    maxPostIndex = i;
             }
-        });
-        */
 
-     /*   VKRequest request = VKApi.wall().get(VKParameters.from(VKApiConst.OWNER_ID, -460389, VKApiConst.COUNT, 1));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse resp) {
-                try {
-                    JSONObject body = resp.json;
-
-                    JSONObject response = body.getJSONObject("response");
-                    JSONArray postsArray = response.getJSONArray("items");
-                    //            for (int i = 0; i < postsArray.length(); i++) {
-                    JSONObject postObject = postsArray.getJSONObject(0);
-                    long date = postObject.getLong("date");
-                    JSONArray attachments = postObject.getJSONArray(("attachments"));
-                    if (attachments.length() > 1) return;
-                    JSONObject attachment = attachments.getJSONObject(0);
-                    if (!attachment.get("type").equals("photo")) return;
-                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build(); //TODO удалить
-                    StrictMode.setThreadPolicy(policy);
-                    final Bitmap bitmap = downloadImage(getPostImagePath(attachment));
-
-                    mResponseHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!mRequestMap.get(target).equals(offset)) {
-                                return;
-                            }
-                            mRequestMap.remove(target);
-                            postDownloaderListener.onPostDownloaded(target, bitmap);
-                        }
-                    });
-                    //              }
+            final Bitmap bitmap = downloadImage(postsPool.get(maxPostIndex).imageUrl);
+            mResponseHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mRequestMap.get(target) != (offset)) {
+                        return;
+                    }
+                    mRequestMap.remove(target);
+                    postDownloaderListener.onPostDownloaded(target, bitmap);
                 }
-                catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
-        */
+            });
+        }
     }
 
     public boolean checkPost(JSONObject postObject) {
         return true; //TODO Сделать checkPost, проверять на рекламу, ссылки, слова текста и т.д. кол-во картинок
     }
-
-   /* public String getPostImagePath(JSONObject attachment) throws JSONException {
-        //Set<String> set = attachment.getJSONObject("photo").().keySet();
-        Set<String> set = new HashSet<>();
-
-        JSONArray values = attachment.getJSONObject("photo").names();
-        for (int i = 0; i < values.length(); i++) {
-            set.add(values.getString(i));
-        }
-        String max = "";
-
-        int maxSum = 0;
-        for (String s : set) {
-            int currentSum = 0;
-            if (s.contains("photo")) currentSum = getStringSum(s);
-            if (currentSum > maxSum) {
-                max = s;
-                maxSum = currentSum;
-            }
-        }
-        // String path = (JSONObject)values.get().toString();
-        String path = (String) attachment.getJSONObject("photo").get(max);
-
-        return path;
-    }
-
-    public int getStringSum(String s) {
-        int sum = 0;
-        for (char c : s.toCharArray()) {
-            sum += c;
-        }
-        return sum;
-    }
-    */
 
     public Bitmap downloadImage(String path) {
         try {
