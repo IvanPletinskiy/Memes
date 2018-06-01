@@ -7,13 +7,14 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.handen.memes.App;
 import com.handen.memes.Group;
+import com.handen.memes.Post;
 
 import java.util.ArrayList;
 
+import static com.handen.memes.database.Schema.GroupsTable.GROUPSTABLE;
 import static com.handen.memes.database.Schema.GroupsTable.ID;
 import static com.handen.memes.database.Schema.GroupsTable.NAME;
 import static com.handen.memes.database.Schema.GroupsTable.SELECTED;
-import static com.handen.memes.database.Schema.GroupsTable.TABLENAME;
 
 /**
  * Created by user2 on 29.05.2018.
@@ -39,7 +40,7 @@ public class Database {
         columns[0] = NAME;
         columns[1] = SELECTED;
         Cursor cursor = mDatabase.query(false,
-                TABLENAME,
+                GROUPSTABLE,
                 columns,
                 null,
                 null,
@@ -66,7 +67,7 @@ public class Database {
         String[] columns = new String[1];
         columns[0] = ID;
         Cursor cursor = mDatabase.query(false,
-                TABLENAME,
+                GROUPSTABLE,
                 columns,
                 null,
                 null,
@@ -89,6 +90,38 @@ public class Database {
 
     public void addGroup(Group group) {
         ContentValues contentValues = Group.toContentValues(group);
-        mDatabase.insert(TABLENAME, null, contentValues);
+        mDatabase.insert(GROUPSTABLE, null, contentValues);
     }
+
+    public ArrayList<Post> getPosts() {
+        ArrayList<Post> ret = new ArrayList<>();
+        Cursor cursor = mDatabase.query(Schema.PostsTable.POSTSTABLE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        cursor.moveToFirst();
+        for(int i = 0; i < cursor.getCount(); i ++) {
+            int id = cursor.getInt(0);
+            String text = cursor.getString(1);
+            String url = cursor.getString(2);
+            long date = cursor.getLong(3);
+            int likes = cursor.getInt(4);
+            int reposts = cursor.getInt(5);
+            boolean isLiked = cursor.getInt(6) == 1;
+            ret.add(new Post(id, text, url, date, likes, reposts, isLiked));
+
+        }
+        cursor.close();
+        return ret;
+    }
+
+    public void savePosts(ArrayList<Post> posts) {
+        for(Post p : posts)
+            mDatabase.insert(Schema.PostsTable.POSTSTABLE, null, p.toContentValues());
+    }
+
 }

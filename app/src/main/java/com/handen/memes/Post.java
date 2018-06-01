@@ -1,6 +1,9 @@
 package com.handen.memes;
 
+import android.content.ContentValues;
 import android.graphics.Bitmap;
+
+import com.handen.memes.database.Schema;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,6 +27,15 @@ public class Post{
     int reposts;
     int views;
 
+    public Post(int id, String text, String url, long date, int likes, int reposts, boolean isLiked) {
+        this.id = id;
+        this.text = text;
+        this.imageUrl = url;
+        this.postMillis = date;
+        this.likes = likes;
+        this.reposts = reposts;
+        this.isLiked = isLiked;
+    }
 
     public static Post fromJSON(JSONObject postObject) throws Exception {
         return new Post(
@@ -100,5 +112,19 @@ public class Post{
 
     public long getPostMillis() {
         return postMillis;
+    }
+
+    public ContentValues toContentValues() {
+        ContentValues contentValues = new ContentValues();
+
+        contentValues.put(Schema.PostsTable.ID, id);
+        contentValues.put(Schema.PostsTable.TEXT, text);
+        contentValues.put(Schema.PostsTable.IMAGEURL, imageUrl);
+        contentValues.put(Schema.PostsTable.DATE, postMillis);
+        contentValues.put(Schema.PostsTable.LIKES, likes);
+        contentValues.put(Schema.PostsTable.REPOSTS, reposts);
+        contentValues.put(Schema.PostsTable.LIKED, isLiked ? 1 : 0);
+
+        return contentValues;
     }
 }

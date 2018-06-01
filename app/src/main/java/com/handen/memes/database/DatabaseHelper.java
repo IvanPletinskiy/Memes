@@ -1,11 +1,11 @@
 package com.handen.memes.database;
 
+import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.content.Context;
-import com.handen.memes.database.Schema.GroupsTable;
 
-import static com.handen.memes.database.Schema.GroupsTable.TABLENAME;
+import static com.handen.memes.database.Schema.GroupsTable.GROUPSTABLE;
+import static com.handen.memes.database.Schema.PostsTable.POSTSTABLE;
 
 /**
  * Created by user2 on 29.05.2018.
@@ -22,14 +22,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("create table " + TABLENAME + "(" +
+        db.execSQL("create table " + GROUPSTABLE + "(" +
                 " _id integer primary key autoincrement, " +
                 Schema.GroupsTable.ID + "," +
                 Schema.GroupsTable.NAME + ", " +
                 Schema.GroupsTable.SELECTED +
                 ")"
         );
-        //TODO добавить вторую таблицу
+        db.execSQL("create table " + POSTSTABLE + "(" +
+                "_id integer primary key, " +
+                Schema.PostsTable.ID + "," +
+                Schema.PostsTable.TEXT + "," +
+                Schema.PostsTable.IMAGEURL + "," +
+                Schema.PostsTable.DATE + "," +
+                Schema.PostsTable.LIKES + "," +
+                Schema.PostsTable.REPOSTS + "," +
+                Schema.PostsTable.LIKED +
+                ")"
+        );
     }
 
     @Override

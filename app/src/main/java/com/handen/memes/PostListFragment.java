@@ -3,6 +3,7 @@ package com.handen.memes;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -11,19 +12,14 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
-import com.handen.memes.dummy.DummyContent.DummyItem;
+import java.util.ArrayList;
 
-/**
- * A fragment representing a list of Items.
- * <p/>
- * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
- * interface.
- */
 public class PostListFragment extends Fragment {
 
-    private OnListFragmentInteractionListener mListener;
     PostDownloader<PostAdapter.ViewHolder> postDownloader;
+    public ArrayList<Post> items = new ArrayList<>();
 
     public PostListFragment() {
 
@@ -48,7 +44,6 @@ public class PostListFragment extends Fragment {
                     }
                 });
 
- //       postDownloader = new PostDownloader<>();
         postDownloader.start();
         postDownloader.getLooper();
     }
@@ -62,33 +57,9 @@ public class PostListFragment extends Fragment {
             Context context = view.getContext();
             RecyclerView recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
-      //      Bitmap bitmap = PostDownloader.addToQueue();
-       //     try {
-       //         Thread.sleep(550);
-     //       }
-     //       catch (InterruptedException e) {
-     //           e.printStackTrace();
-     //       }
-            recyclerView.setAdapter(new PostAdapter(postDownloader, mListener));
+            recyclerView.setAdapter(new PostAdapter());
         }
         return view;
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnListFragmentInteractionListener) {
-            mListener = (OnListFragmentInteractionListener) context;
-        }
-        else {
-
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
     }
 
     @Override
@@ -103,18 +74,50 @@ public class PostListFragment extends Fragment {
         postDownloader.clearQueue();
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+    public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
+        public PostAdapter() {
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_post, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final ViewHolder holder, int position) {
+            Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+            holder.bindDrawable(placeholder);
+            ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+
+            if(items.size() -1 >= position && items.get(position) != null) {
+
+            }
+            else {
+              //  PostPool.getPost(position);
+            }
+
+            postDownloader.addToQueue(holder, position);
+        }
+
+        @Override
+        public int getItemCount() {
+            return 1;
+        }
+
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            public final View mView;
+            public ImageView imageView;
+
+            public ViewHolder(View view) {
+                super(view);
+                mView = view;
+                imageView = view.findViewById(R.id.image);
+            }
+
+            public void bindDrawable(Drawable drawable) {
+                imageView.setImageDrawable(drawable);
+            }
+        }
     }
 }
