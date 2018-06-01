@@ -3,18 +3,23 @@ package com.handen.memes;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.support.annotation.Nullable;
 
 import com.handen.memes.database.Database;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
+import com.vk.sdk.api.VKBatchRequest;
+import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -22,6 +27,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -34,7 +41,7 @@ public class PostDownloader<T> extends HandlerThread {
     private static Date period;
     private Date currentDate;
 
-    private static int POSTQUERYCOUNT = 100;
+    private static int POSTQUERYCOUNT = 10;
 
     private static final int MESSSAGE_DOWNLOAD = 0;
     private Handler mRequestHandler;
@@ -55,18 +62,6 @@ public class PostDownloader<T> extends HandlerThread {
         mResponseHandler = responseHandler;
     }
 
-    /*
-        Для каждого промежутка от текущей даты мы получаем все посты групп, выбираем самым популярный, скачиваем картинку для него
-    */
-
-    public static void getPosts() {
-
-    }
-
-    public static void downloadImage() {
-
-    }
-
     public void clearQueue() {
         mRequestHandler.removeMessages(MESSSAGE_DOWNLOAD);
     }
@@ -85,9 +80,9 @@ public class PostDownloader<T> extends HandlerThread {
         };
     }
 
-    public void addToQueue(T target, int offset) {
+    public void addToQueue(T target, @Nullable Integer offset) {
 
-        if (offset == -1) {
+        if (offset == null) {
             mRequestMap.remove(target);
         }
         else {
@@ -97,7 +92,7 @@ public class PostDownloader<T> extends HandlerThread {
     }
 
     private void handleRequest(final T target) {
-        final ArrayList<Post> postsPool = new ArrayList<>(); //Список постов за период времени из ВСЕХ групп, отсюда выбирается лучший пост
+ //       final ArrayList<Post> postsPool = new ArrayList<>(); //Список постов за период времени из ВСЕХ групп, отсюда выбирается лучший пост
         final int offset = mRequestMap.get(target);
         long currentMillis = new Date().getTime();
         long period = Preferences.getPeriod();
@@ -111,15 +106,40 @@ public class PostDownloader<T> extends HandlerThread {
         final long endMillis = currentMillis - offset * period;
 
         ArrayList<Group> groups = Database.getGroupsIds(); //Список груп, откуда берутся посты
-        for (Group g : groups) { //Для каждой группы делаем запрос
+
+        ArrayList<VKRequest> requests = new ArrayList<>();
+        for(Group g : groups) {
             final int[] i = {0};
             VKRequest request = VKApi.wall().get(VKParameters.from(
                     VKApiConst.OWNER_ID, g.getId(), //Владелец группы
                     VKApiConst.COUNT, POSTQUERYCOUNT, //Кол-во постов
                     VKApiConst.OFFSET, POSTQUERYCOUNT * i[0]));
-            request.executeWithListener(new VKRequest.VKRequestListener() { //Выполняем запрос, ответ приходит спустя время в onComplete
-                @Override
-                public void onComplete(VKResponse resp) {
+            requests.add(request);
+        }
+/*
+        VKRequest[] requestsArray = new VKRequest[5];
+        for(int i = 0; i < 4; i ++) {
+            requestsArray[i] = requests.get(i);
+        }
+*/
+/*
+        VKRequest request1 = VKApi.wall().get(VKParameters.from(
+                VKApiConst.OWNER_ID, groups.get(0).getId(), //Владелец группы
+                VKApiConst.COUNT, POSTQUERYCOUNT, //Кол-во постов
+                VKApiConst.OFFSET, 0));
+        VKRequest request2 = VKApi.wall().get(VKParameters.from(
+                VKApiConst.OWNER_ID, groups.get(1).getId(), //Владелец группы
+                VKApiConst.COUNT, POSTQUERYCOUNT, //Кол-во постов
+                VKApiConst.OFFSET, 0));
+*/
+        VKRequest[] requestsArray = requests.toArray(new VKRequest[requests.size()]);
+        VKBatchRequest batchRequest = new VKBatchRequest(requestsArray);
+        batchRequest.executeWithListener(new VKBatchRequest.VKBatchRequestListener() {
+            @Override
+            public void onComplete(VKResponse[] responses) {
+                super.onComplete(responses);
+                final ArrayList<Post> postsPool = new ArrayList<>();
+                for(VKResponse resp : responses) {
                     try {
                         JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
                         //Каждый пост мы проверяем, подходит ли он и добавляем в postsPool
@@ -150,40 +170,44 @@ public class PostDownloader<T> extends HandlerThread {
                         e.printStackTrace();
                     }
                 }
-            });
-        }
 
-        if (postsPool.size() != 0) { //Выбираем лучший пост и скачиваем его
-            double maxValue = 0;
-            int maxPostIndex = 0;
-            for (int i = 0; i < postsPool.size(); i++) {
-                long millis = new Date().getTime();
-                Post post = postsPool.get(i);
-                long post1Millis = millis - post.getPostMillis();
+                if (postsPool.size() != 0) { //Выбираем лучший пост и скачиваем его
+                    double maxValue = 0;
+                    int maxPostIndex = 0;
+                    for (int i = 0; i < postsPool.size(); i++) {
+                        long millis = new Date().getTime();
+                        Post post = postsPool.get(i);
+                        long post1Millis = millis - post.getPostMillis();
 
-                double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
+                        double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
 
-                if (i == 0)
-                    maxValue = postValue;
-                if (postValue > maxValue)
-                    maxPostIndex = i;
+                        if (i == 0)
+                            maxValue = postValue;
+                        if (postValue > maxValue)
+                            maxPostIndex = i;
+                    }
+
+             //       final Bitmap bitmap = downloadImage(postsPool.get(maxPostIndex).imageUrl);
+                    final int finalMaxPostIndex = maxPostIndex;
+                    new ImageDownloader(postsPool.get(finalMaxPostIndex).imageUrl, target, offset).execute();
+                }
             }
 
-            final Bitmap bitmap = downloadImage(postsPool.get(maxPostIndex).imageUrl);
-            mResponseHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mRequestMap.get(target) != (offset)) {
-                        return;
-                    }
-                    mRequestMap.remove(target);
-                    postDownloaderListener.onPostDownloaded(target, bitmap);
-                }
-            });
-        }
+            @Override
+            public void onError(VKError error) {
+            }
+        });
     }
 
-    public boolean checkPost(JSONObject postObject) {
+    public boolean checkPost(JSONObject postObject) throws JSONException {
+        JSONArray attachments = postObject.getJSONArray(("attachments"));
+        if (attachments.length() > 1)
+            return false;
+        JSONObject attachment = attachments.getJSONObject(0);
+        //Set<String> set = attachment.getJSONObject("photo").().keySet();
+        Set<String> set = new HashSet<>();
+        if(!attachment.has("photo"))
+            return false;
         return true; //TODO Сделать checkPost, проверять на рекламу, ссылки, слова текста и т.д. кол-во картинок
     }
 
@@ -200,6 +224,38 @@ public class PostDownloader<T> extends HandlerThread {
         catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private class ImageDownloader extends AsyncTask<Void, Void, Bitmap> {
+        private String url;
+        private T target;
+        private Integer offset;
+
+        public ImageDownloader(String url, T target, int offset) {
+            this.url = url;
+            this.target = target;
+            this.offset = offset;
+        }
+
+        @Override
+        protected Bitmap doInBackground(Void... voids) {
+            return downloadImage(url);
+        }
+
+        @Override
+        protected void onPostExecute(final Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            mResponseHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mRequestMap.get(target) != (offset)) {
+                        return;
+                    }
+                    mRequestMap.remove(target);
+                    postDownloaderListener.onPostDownloaded(target, bitmap);
+                }
+            });
         }
     }
 }

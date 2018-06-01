@@ -1,6 +1,5 @@
 package com.handen.memes;
 
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -21,8 +20,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
     private final OnListFragmentInteractionListener mListener;
     PostDownloader<PostAdapter.ViewHolder> mPostDownloader;
 
-    Bitmap mBitmap;
-
     public PostAdapter(PostDownloader<PostAdapter.ViewHolder> postDownloader, OnListFragmentInteractionListener listener) {
         mPostDownloader = postDownloader;
         mListener = listener;
@@ -38,6 +35,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
     public void onBindViewHolder(final ViewHolder holder, int position) {
         Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
         holder.bindDrawable(placeholder);
+        ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+
 
         mPostDownloader.addToQueue(holder, position);
        // mPostDownloader.addToQueue(holder);
@@ -58,7 +57,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
                 if (null != mListener) {
                     // Notify the active callbacks interface (the activity, if the
                     // fragment is attached to one) that an item has been selected.
-
                 }
             }
         });
@@ -78,8 +76,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
             mView = view;
             imageView = view.findViewById(R.id.image);
         }
+
         public void bindDrawable(Drawable drawable) {
             imageView.setImageDrawable(drawable);
+         //   onBindViewHolder(this, getAdapterPosition());
         }
     }
 }
