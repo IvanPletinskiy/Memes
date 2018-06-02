@@ -13,6 +13,10 @@ public class Group {
     private String name;
     private boolean isSelected;
 
+    //Эти поля используются только в PostDownloader
+    private long lastPostDownloadedMillis;
+    private int postDownloadedCount;
+
     public Group(String name, boolean isSelected) {
         this.name = name;
         this.isSelected = isSelected;
@@ -26,6 +30,11 @@ public class Group {
 
     public Group(int id) {
         this.id = id;
+    }
+
+    public Group(int id, boolean isSelected) {
+        this.id = id;
+        this.isSelected = isSelected;
     }
 
     public int getId() {
@@ -50,6 +59,22 @@ public class Group {
 
     public void setIsSelected(boolean isSelected) {
         this.isSelected = isSelected;
+    }
+
+    public long getLastPostDownloadedMillis() {
+        return lastPostDownloadedMillis;
+    }
+
+    public void setLastPostDownloadedMillis(long lastPostDownloadedMillis) {
+        this.lastPostDownloadedMillis = lastPostDownloadedMillis;
+    }
+
+    public int getPostDownloadedCount() {
+        return postDownloadedCount;
+    }
+
+    public void setPostDownloadedCount(int postDownloadedCount) {
+        this.postDownloadedCount = postDownloadedCount;
     }
 
     public static ContentValues toContentValues(Group group) {

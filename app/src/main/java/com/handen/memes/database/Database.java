@@ -64,8 +64,9 @@ public class Database {
 
     public static ArrayList<Group> getGroupsIds() {
         ArrayList<Group> ret = new ArrayList<>();
-        String[] columns = new String[1];
+        String[] columns = new String[2];
         columns[0] = ID;
+        columns[1] = SELECTED;
         Cursor cursor = mDatabase.query(false,
                 GROUPSTABLE,
                 columns,
@@ -80,7 +81,8 @@ public class Database {
         cursor.moveToFirst();
         for(int i = 0; i < cursor.getCount(); i ++) {
             int id = cursor.getInt(0);
-            Group group = new Group(id);
+            int selected = cursor.getInt(1);
+            Group group = new Group(id, selected == 1);
             ret.add(group);
             cursor.moveToNext();
         }
@@ -93,7 +95,7 @@ public class Database {
         mDatabase.insert(GROUPSTABLE, null, contentValues);
     }
 
-    public ArrayList<Post> getPosts() {
+    public static ArrayList<Post> getPosts() {
         ArrayList<Post> ret = new ArrayList<>();
         Cursor cursor = mDatabase.query(Schema.PostsTable.POSTSTABLE,
                 null,
@@ -113,7 +115,6 @@ public class Database {
             int reposts = cursor.getInt(5);
             boolean isLiked = cursor.getInt(6) == 1;
             ret.add(new Post(id, text, url, date, likes, reposts, isLiked));
-
         }
         cursor.close();
         return ret;

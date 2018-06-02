@@ -41,7 +41,7 @@ public class Post{
         return new Post(
                 postObject.getInt("id"),
                 postObject.getString("text"),
-                postObject.getLong("date"),
+                postObject.getLong("date") * 1000,
                 getPostImagePath(postObject),
                 countLikes(postObject),
                 countReposts(postObject)
@@ -112,6 +112,18 @@ public class Post{
 
     public long getPostMillis() {
         return postMillis;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public Bitmap getImage() {
+        return image;
+    }
+
+    public void setImage(Bitmap image) {
+        this.image = image;
     }
 
     public ContentValues toContentValues() {

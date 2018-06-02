@@ -1,7 +1,6 @@
 package com.handen.memes;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -39,8 +38,10 @@ public class PostListFragment extends Fragment {
         postDownloader.setPostDownloaderListener(
                 new PostDownloader.PostDownloaderListener<PostAdapter.ViewHolder>() {
                     @Override
-                    public void onPostDownloaded(PostAdapter.ViewHolder target, Bitmap bitmap) {
-                        target.bindDrawable(new BitmapDrawable(getResources(), bitmap));
+                    public void onPostDownloaded(PostAdapter.ViewHolder target, Post post) {
+                        target.bindDrawable(new BitmapDrawable(getResources(), post.getImage()));
+                        //items.add(target.getAdapterPosition(), post);
+                        items.add(post);
                     }
                 });
 
@@ -87,22 +88,20 @@ public class PostListFragment extends Fragment {
         @Override
         public void onBindViewHolder(final ViewHolder holder, int position) {
             Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
-            holder.bindDrawable(placeholder);
+            holder.imageView.setImageDrawable(placeholder);
             ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
 
-            if(items.size() -1 >= position && items.get(position) != null) {
-
+            if(items.size() > 0 && items.get(position) != null) {
+                holder.bindDrawable(new BitmapDrawable(getResources(), items.get(position).getImage()));
             }
             else {
-              //  PostPool.getPost(position);
+                postDownloader.getPost(holder, position);
             }
-
-            postDownloader.addToQueue(holder, position);
         }
 
         @Override
         public int getItemCount() {
-            return 1;
+            return 25;
         }
 
         public class ViewHolder extends RecyclerView.ViewHolder {
@@ -117,6 +116,7 @@ public class PostListFragment extends Fragment {
 
             public void bindDrawable(Drawable drawable) {
                 imageView.setImageDrawable(drawable);
+                notifyDataSetChanged();
             }
         }
     }
