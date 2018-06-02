@@ -91,7 +91,7 @@ public class PostListFragment extends Fragment {
             holder.imageView.setImageDrawable(placeholder);
             ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
 
-            if(items.size() > 0 && items.get(position) != null) {
+            if(items.size() > position && items.get(position) != null) {
                 holder.bindDrawable(new BitmapDrawable(getResources(), items.get(position).getImage()));
             }
             else {

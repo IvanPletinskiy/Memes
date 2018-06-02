@@ -1,6 +1,7 @@
 package com.handen.memes;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -8,6 +9,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.handen.memes.database.Database;
 import com.handen.memes.dummy.DummyContent.DummyItem;
@@ -22,12 +24,14 @@ import java.util.ArrayList;
  */
 public class GroupListFragment extends Fragment {
 
-    // TODO: Customize parameters
-    private int mColumnCount = 1;
-
     private OnListFragmentInteractionListener mListener;
 
     private ArrayList<Group> groups;
+
+    private TextView searchText, linkText;
+
+    private static final int REQUEST_CODE_SEARCH = 71;
+    private static final int REQUEST_CODE_LINK = 72;
 
     public static GroupListFragment newInstance() {
         return new GroupListFragment();
@@ -54,6 +58,22 @@ public class GroupListFragment extends Fragment {
         RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setAdapter(new GroupAdapter(groups, mListener));
+        searchText = view.findViewById(R.id.addWithSearch);
+        searchText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getContext(), SearchActivity.class);
+                startActivityForResult(intent, REQUEST_CODE_SEARCH);
+            }
+        });
+        linkText = view.findViewById(R.id.addWithLink);
+        linkText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getContext(), LinkActivity.class);
+                startActivityForResult(intent, REQUEST_CODE_LINK);
+            }
+        });
         return view;
     }
 
