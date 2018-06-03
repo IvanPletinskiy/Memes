@@ -23,6 +23,7 @@ public class Schema {
         public static final String LIKES = "likes";
         public static final String REPOSTS = "reposts";
         public static final String LIKED = "liked";
+        public static final String IMAGE = "image";
     }
 
     public static final class FavoritesTable {

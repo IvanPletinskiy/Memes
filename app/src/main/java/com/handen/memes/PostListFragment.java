@@ -13,12 +13,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.handen.memes.database.Database;
+
 import java.util.ArrayList;
 
 public class PostListFragment extends Fragment {
 
-    PostDownloader<PostAdapter.ViewHolder> postDownloader;
-    public ArrayList<Post> items = new ArrayList<>();
+    PostDownloader<PostListFragment.ViewHolder> postDownloader;
+    public ArrayList<Post> items = new ArrayList<>(10);
+
+    private RecyclerView recyclerView;
+
+    private int postCount = 5;
 
     public PostListFragment() {
 
@@ -36,12 +42,13 @@ public class PostListFragment extends Fragment {
         Handler responseHandler = new Handler();
         postDownloader = new PostDownloader<>(responseHandler);
         postDownloader.setPostDownloaderListener(
-                new PostDownloader.PostDownloaderListener<PostAdapter.ViewHolder>() {
+                new PostDownloader.PostDownloaderListener<PostListFragment.ViewHolder>() {
                     @Override
-                    public void onPostDownloaded(PostAdapter.ViewHolder target, Post post) {
+                    public void onPostDownloaded(ViewHolder target, Post post) {
                         target.bindDrawable(new BitmapDrawable(getResources(), post.getImage()));
                         //items.add(target.getAdapterPosition(), post);
                         items.add(post);
+                        recyclerView.getAdapter().notifyItemChanged(items.size() - 1);
                     }
                 });
 
@@ -53,14 +60,27 @@ public class PostListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_post_list, container, false);
 
-        // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
+            recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            recyclerView.setAdapter(new PostAdapter());
+            setupAdapter();
         }
         return view;
+    }
+
+    private void setupAdapter() {
+        if (isAdded()) {
+            PostAdapter adapter = new PostAdapter();
+
+            adapter.setOnBottomReachedListener(new OnBottomReachedListener() {
+                @Override
+                public void onBottomReached(int position) {
+
+                }
+            });
+            recyclerView.setAdapter(adapter);
+        }
     }
 
     @Override
@@ -75,7 +95,9 @@ public class PostListFragment extends Fragment {
         postDownloader.clearQueue();
     }
 
-    public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
+    public class PostAdapter extends RecyclerView.Adapter<ViewHolder> implements OnBottomReachedListener {
+        OnBottomReachedListener onBottomReachedListener;
+
         public PostAdapter() {
         }
 
@@ -86,9 +108,26 @@ public class PostListFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, int position) {
-            Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+        public void onBindViewHolder(final ViewHolder holder, final int position) {
+            Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.placeholder);
             holder.imageView.setImageDrawable(placeholder);
+            holder.like.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(items.size() > position && items.get(position) != null) {
+                        if(!items.get(position).isLiked()) {
+                            holder.like.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
+                            items.get(position).setLiked(true);
+                            Database.saveLikedPost(items.get(position));
+                        }
+                        if(items.get(position).isLiked()) {
+                            holder.like.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite_border));
+                            items.get(position).setLiked(false);
+                            Database.deleteLikedPost(items.get(position));
+                        }
+                    }
+                }
+            });
             ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
 
             if(items.size() > position && items.get(position) != null) {
@@ -97,27 +136,50 @@ public class PostListFragment extends Fragment {
             else {
                 postDownloader.getPost(holder, position);
             }
+
+            if (position == items.size() - 1 || items.size() == 0) {
+                onBottomReachedListener.onBottomReached(position);
+                //                notifyDataSetChanged();
+            }
         }
 
         @Override
         public int getItemCount() {
-            return 25;
+            return postCount;
         }
 
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public final View mView;
-            public ImageView imageView;
 
-            public ViewHolder(View view) {
-                super(view);
-                mView = view;
-                imageView = view.findViewById(R.id.image);
-            }
-
-            public void bindDrawable(Drawable drawable) {
-                imageView.setImageDrawable(drawable);
-                notifyDataSetChanged();
-            }
+        public void setOnBottomReachedListener(OnBottomReachedListener onBottomReachedListener) {
+            this.onBottomReachedListener = onBottomReachedListener;
         }
+
+        @Override
+        public void onBottomReached(int position) {
+            postCount++;
+            postDownloader.getPost((ViewHolder) recyclerView.findViewHolderForAdapterPosition(position), position);
+            recyclerView.getAdapter().notifyDataSetChanged();
+        }
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        public final View mView;
+        public ImageView imageView;
+        public ImageView like;
+
+        public ViewHolder(View view) {
+            super(view);
+            mView = view;
+            imageView = view.findViewById(R.id.image);
+            like = view.findViewById(R.id.like);
+        }
+
+        public void bindDrawable(Drawable drawable) {
+            imageView.setImageDrawable(drawable);
+            //                notifyDataSetChanged();
+        }
+    }
+
+    public interface OnBottomReachedListener {
+        void onBottomReached(int position);
     }
 }

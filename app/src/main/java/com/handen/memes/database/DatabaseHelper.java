@@ -37,7 +37,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Schema.PostsTable.DATE + "," +
                 Schema.PostsTable.LIKES + "," +
                 Schema.PostsTable.REPOSTS + "," +
-                Schema.PostsTable.LIKED +
+                Schema.PostsTable.LIKED + "," +
+                Schema.PostsTable.IMAGE +
                 ")"
         );
     }

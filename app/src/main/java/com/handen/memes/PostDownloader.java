@@ -48,7 +48,7 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
     private ConcurrentMap<T, Integer> mRequestMap = new ConcurrentHashMap<>();
     private PostDownloaderListener<T> postDownloaderListener;
 
-    private ArrayList<Post> postsPool;
+    private static ArrayList<Post> postsPool = new ArrayList<>();
 
     public interface PostDownloaderListener<T> {
         void onPostDownloaded(T target, Post post);
@@ -62,11 +62,15 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
         super(TAG);
         mResponseHandler = responseHandler;
         groups = Database.getGroupsIds();
-        postsPool = Database.getPosts();
+       // postsPool = Database.getPosts();
     }
 
     public void clearQueue() {
         mRequestHandler.removeMessages(MESSSAGE_DOWNLOAD);
+    }
+
+    public static ArrayList<Post> getPostsPool() {
+        return postsPool;
     }
 
     @SuppressLint("HandlerLeak")
@@ -228,7 +232,11 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
                 maxPostIndex = i;
             }
         }
-        return periodPosts.get(maxPostIndex);
+
+        if(periodPosts.size() > 0)
+            return periodPosts.get(maxPostIndex);
+        else
+            return null;
     }
 
     private ArrayList<Post> getPeriodPosts(Integer offset) {

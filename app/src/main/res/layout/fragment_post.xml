@@ -3,7 +3,7 @@
               android:layout_marginTop="8dp"
               android:layout_marginBottom="8dp"
               android:layout_width="match_parent"
-              android:layout_height="300dp"
+              android:layout_height="wrap_content"
               android:orientation="vertical">
 
    <ImageView
@@ -12,6 +12,7 @@
        android:scaleType="fitXY"
        android:layout_height="wrap_content"/>
 
+
    <LinearLayout
        android:layout_width="match_parent"
        android:layout_height="wrap_content"
@@ -19,6 +20,7 @@
        android:layout_marginTop="4dp">
 
       <ImageView
+          android:id="@+id/like"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:src="@drawable/ic_favorite_border"

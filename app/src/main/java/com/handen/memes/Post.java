@@ -8,6 +8,7 @@ import com.handen.memes.database.Schema;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,13 +20,11 @@ public class Post{
     int id;
     String text;
     long postMillis;
-    Bitmap image; //TODO Сделать картинки
+    Bitmap image;
     boolean isLiked;
     String imageUrl;
-
     int likes;
     int reposts;
-    int views;
 
     public Post(int id, String text, String url, long date, int likes, int reposts, boolean isLiked) {
         this.id = id;
@@ -35,6 +34,26 @@ public class Post{
         this.likes = likes;
         this.reposts = reposts;
         this.isLiked = isLiked;
+    }
+
+    public Post(int id, String text, String url, long date, int likes, int reposts, boolean isLiked, Bitmap bitmap) {
+        this.id = id;
+        this.text = text;
+        this.imageUrl = url;
+        this.postMillis = date;
+        this.likes = likes;
+        this.reposts = reposts;
+        this.isLiked = isLiked;
+        this.image = bitmap;
+    }
+
+    public Post(int id, String text, long postMillis, String imageUrl, int likes, int reposts) {
+        this.id = id;
+        this.text = text;
+        this.postMillis = postMillis;
+        this.imageUrl = imageUrl;
+        this.likes = likes;
+        this.reposts = reposts;
     }
 
     public static Post fromJSON(JSONObject postObject) throws Exception {
@@ -56,15 +75,6 @@ public class Post{
         return postObject.getJSONObject("likes").getInt("count");
     }
 
-    public Post(int id, String text, long postMillis, String imageUrl, int likes, int reposts) {
-        this.id = id;
-        this.text = text;
-        this.postMillis = postMillis;
-        this.imageUrl = imageUrl;
-        this.likes = likes;
-        this.reposts = reposts;
-    }
-
     public static String getPostImagePath(JSONObject postObject) throws Exception {
         JSONArray attachments = postObject.getJSONArray(("attachments"));
         if (attachments.length() > 1)
@@ -74,7 +84,7 @@ public class Post{
         Set<String> set = new HashSet<>();
 
         JSONArray values = attachment.getJSONObject("photo").names();
-        for (int i = 0; i < values.length(); i++) {
+/*        for (int i = 0; i < values.length(); i++) {
             set.add(values.getString(i));
         }
         String max = "";
@@ -88,8 +98,10 @@ public class Post{
                 maxSum = currentSum;
             }
         }
+        */
+
         // String path = (JSONObject)values.get().toString();
-        String path = (String) attachment.getJSONObject("photo").get(max);
+        String path = (String) attachment.getJSONObject("photo").get("photo_604");
 
         return path;
     }
@@ -126,6 +138,18 @@ public class Post{
         this.image = image;
     }
 
+    public boolean isLiked() {
+        return isLiked;
+    }
+
+    public void setLiked(boolean liked) {
+        isLiked = liked;
+    }
+
+    public int getId() {
+        return id;
+    }
+
     public ContentValues toContentValues() {
         ContentValues contentValues = new ContentValues();
 
@@ -136,7 +160,11 @@ public class Post{
         contentValues.put(Schema.PostsTable.LIKES, likes);
         contentValues.put(Schema.PostsTable.REPOSTS, reposts);
         contentValues.put(Schema.PostsTable.LIKED, isLiked ? 1 : 0);
-
+        if(image != null) {
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            image.compress(Bitmap.CompressFormat.PNG, 0, stream);
+            contentValues.put(Schema.PostsTable.IMAGE, stream.toByteArray());
+        }
         return contentValues;
     }
 }

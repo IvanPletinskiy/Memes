@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import com.handen.memes.App;
 import com.handen.memes.Group;
@@ -120,9 +122,38 @@ public class Database {
         return ret;
     }
 
-    public void savePosts(ArrayList<Post> posts) {
-        for(Post p : posts)
-            mDatabase.insert(Schema.PostsTable.POSTSTABLE, null, p.toContentValues());
+    public static ArrayList<Post> getLikedPost() {
+        ArrayList<Post> ret = new ArrayList<>();
+        Cursor cursor = mDatabase.query(Schema.PostsTable.POSTSTABLE,
+                null,
+                "liked = 1",
+                null,
+                null,
+                null,
+                null
+                );
+        for(int i = 0; i < cursor.getCount(); i++) {
+            int id = cursor.getInt(0);
+            String text = cursor.getString(1);
+            String url = cursor.getString(2);
+            long date = cursor.getLong(3);
+            int likes = cursor.getInt(4);
+            int reposts = cursor.getInt(5);
+            boolean isLiked = cursor.getInt(6) == 1;
+            byte[] array = cursor.getBlob(7);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(array, 0, array.length);
+
+            ret.add(new Post(id, text, url, date, likes, reposts, isLiked, bitmap));
+        }
+        return getLikedPost();
+    }
+
+    public static void saveLikedPost(Post post) {
+            mDatabase.insert(Schema.PostsTable.POSTSTABLE, null, post.toContentValues());
+    }
+
+    public static void deleteLikedPost(Post post) {
+        mDatabase.delete(Schema.PostsTable.POSTSTABLE, "id = " + post.getId(), null);
     }
 
 }
