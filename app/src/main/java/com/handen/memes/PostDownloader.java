@@ -287,7 +287,8 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
 
         @Override
         protected Post doInBackground(Void... voids) {
-            post.setImage(downloadImage(post.getImageUrl()));
+            if(post != null)
+                post.setImage(downloadImage(post.getImageUrl()));
             return post;
         }
 

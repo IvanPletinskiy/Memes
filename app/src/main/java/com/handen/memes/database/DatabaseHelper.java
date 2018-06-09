@@ -23,14 +23,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("create table " + GROUPSTABLE + "(" +
-                " _id integer primary key autoincrement, " +
+       //         " _id integer primary key autoincrement, " +
                 Schema.GroupsTable.ID + "," +
                 Schema.GroupsTable.NAME + ", " +
                 Schema.GroupsTable.SELECTED +
                 ")"
         );
         db.execSQL("create table " + POSTSTABLE + "(" +
-                "_id integer primary key, " +
+       //         "_id integer primary key, " +
                 Schema.PostsTable.ID + "," +
                 Schema.PostsTable.TEXT + "," +
                 Schema.PostsTable.IMAGEURL + "," +

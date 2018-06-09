@@ -117,12 +117,13 @@ public class Database {
             int reposts = cursor.getInt(5);
             boolean isLiked = cursor.getInt(6) == 1;
             ret.add(new Post(id, text, url, date, likes, reposts, isLiked));
+            cursor.moveToNext();
         }
         cursor.close();
         return ret;
     }
 
-    public static ArrayList<Post> getLikedPost() {
+    public static ArrayList<Post> getLikedPosts() {
         ArrayList<Post> ret = new ArrayList<>();
         Cursor cursor = mDatabase.query(Schema.PostsTable.POSTSTABLE,
                 null,
@@ -132,6 +133,7 @@ public class Database {
                 null,
                 null
                 );
+        cursor.moveToFirst();
         for(int i = 0; i < cursor.getCount(); i++) {
             int id = cursor.getInt(0);
             String text = cursor.getString(1);
@@ -144,8 +146,31 @@ public class Database {
             Bitmap bitmap = BitmapFactory.decodeByteArray(array, 0, array.length);
 
             ret.add(new Post(id, text, url, date, likes, reposts, isLiked, bitmap));
+            cursor.moveToNext();
         }
-        return getLikedPost();
+        cursor.close();
+        return ret;
+    }
+
+    public static ArrayList<Integer> getLikedPostsIds() {
+        ArrayList<Integer> ret = new ArrayList<>();
+        String[] columns = new String[1];
+        columns[0] = Schema.PostsTable.ID;
+        Cursor cursor = mDatabase.query(Schema.PostsTable.POSTSTABLE,
+                columns,
+                "liked = 1",
+                null,
+                null,
+                null,
+                null
+        );
+        cursor.moveToFirst();
+        for(int i = 0; i < cursor.getCount(); i++) {
+            ret.add(cursor.getInt(0));
+            cursor.moveToNext();
+        }
+        cursor.close();
+        return ret;
     }
 
     public static void saveLikedPost(Post post) {

@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<Fragment> fragments = new ArrayList<Fragment>();
         fragments.add(GroupListFragment.newInstance());
         fragments.add(PostListFragment.newInstance());
-        fragments.add(PostListFragment.newInstance());
+        fragments.add(FavoritesFragment.newInstance());
 
         bottomNavigationView = (BottomNavigationView) findViewById(R.id.navigation);
 

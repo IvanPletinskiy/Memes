@@ -45,7 +45,8 @@ public class PostListFragment extends Fragment {
                 new PostDownloader.PostDownloaderListener<PostListFragment.ViewHolder>() {
                     @Override
                     public void onPostDownloaded(ViewHolder target, Post post) {
-                        target.bindDrawable(new BitmapDrawable(getResources(), post.getImage()));
+                        if(post != null)
+                            target.bindDrawable(new BitmapDrawable(getResources(), post.getImage()));
                         //items.add(target.getAdapterPosition(), post);
                         items.add(post);
                         recyclerView.getAdapter().notifyItemChanged(items.size() - 1);
@@ -108,30 +109,40 @@ public class PostListFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, final int position) {
+        public void onBindViewHolder(final ViewHolder holder, final int p) {
+            final int position = holder.getAdapterPosition();
             Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.placeholder);
             holder.imageView.setImageDrawable(placeholder);
-            holder.like.setOnClickListener(new View.OnClickListener() {
+            holder.likeView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if(items.size() > position && items.get(position) != null) {
                         if(!items.get(position).isLiked()) {
-                            holder.like.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
+                            holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
                             items.get(position).setLiked(true);
                             Database.saveLikedPost(items.get(position));
+                         //   notifyItemChanged(position);
                         }
-                        if(items.get(position).isLiked()) {
-                            holder.like.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite_border));
-                            items.get(position).setLiked(false);
-                            Database.deleteLikedPost(items.get(position));
+                        else {
+                            if(items.get(position).isLiked()) {
+                                holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite_border));
+                                items.get(position).setLiked(false);
+                                Database.deleteLikedPost(items.get(position));
+                            }
                         }
                     }
                 }
             });
-            ///Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.ic_launcher_background);
+            ArrayList<Integer> likedIds = Database.getLikedPostsIds();
+     //       if(likedIds.size() > 0)
+               // if(likedIds.contains(items.get(holder.getAdapterPosition()).getId()))
+            //if(items.size() > !holder.getAdapterPosition() && items.get(holder.getAdapterPosition()).isLiked())
+      //              holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
 
             if(items.size() > position && items.get(position) != null) {
                 holder.bindDrawable(new BitmapDrawable(getResources(), items.get(position).getImage()));
+                if(likedIds.size() > 0)
+                    holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
             }
             else {
                 postDownloader.getPost(holder, position);
@@ -148,7 +159,6 @@ public class PostListFragment extends Fragment {
             return postCount;
         }
 
-
         public void setOnBottomReachedListener(OnBottomReachedListener onBottomReachedListener) {
             this.onBottomReachedListener = onBottomReachedListener;
         }
@@ -164,13 +174,13 @@ public class PostListFragment extends Fragment {
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
         public ImageView imageView;
-        public ImageView like;
+        public ImageView likeView;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
             imageView = view.findViewById(R.id.image);
-            like = view.findViewById(R.id.like);
+            likeView = view.findViewById(R.id.like);
         }
 
         public void bindDrawable(Drawable drawable) {

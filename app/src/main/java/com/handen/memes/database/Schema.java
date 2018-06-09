@@ -25,11 +25,4 @@ public class Schema {
         public static final String LIKED = "liked";
         public static final String IMAGE = "image";
     }
-
-    public static final class FavoritesTable {
-        public static final String TABLENAME = "favorites";
-        public static final String ID = "id";
-        //TODO доделать
-    }
-
 }

@@ -101,7 +101,7 @@ public class Post{
         */
 
         // String path = (JSONObject)values.get().toString();
-        String path = (String) attachment.getJSONObject("photo").get("photo_604");
+        String path = (String) attachment.getJSONObject("photo").get("photo_1280");
 
         return path;
     }
