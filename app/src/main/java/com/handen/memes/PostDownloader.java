@@ -69,10 +69,6 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
         mRequestHandler.removeMessages(MESSSAGE_DOWNLOAD);
     }
 
-    public static ArrayList<Post> getPostsPool() {
-        return postsPool;
-    }
-
     @SuppressLint("HandlerLeak")
     @Override
     protected void onLooperPrepared() {
@@ -141,7 +137,6 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
             @Override
             public void onComplete(VKResponse[] responses) {
                 super.onComplete(responses);
-
                 for(VKResponse resp : responses) {
                     try {
                         JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
@@ -184,6 +179,7 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
                         e.printStackTrace();
                     }
                 }
+
                 onPostsPrepared(target);
             }
         });

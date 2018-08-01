@@ -12,19 +12,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.handen.memes.database.Database;
 
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PostListFragment extends Fragment {
-
     PostDownloader<PostListFragment.ViewHolder> postDownloader;
-    public ArrayList<Post> items = new ArrayList<>(10);
+    public CopyOnWriteArrayList<Post> items = new CopyOnWriteArrayList<>();
 
     private RecyclerView recyclerView;
-
-    private int postCount = 5;
 
     public PostListFragment() {
 
@@ -45,11 +44,16 @@ public class PostListFragment extends Fragment {
                 new PostDownloader.PostDownloaderListener<PostListFragment.ViewHolder>() {
                     @Override
                     public void onPostDownloaded(ViewHolder target, Post post) {
-                        if(post != null)
-                            target.bindDrawable(new BitmapDrawable(getResources(), post.getImage()));
-                        //items.add(target.getAdapterPosition(), post);
-                        items.add(post);
-                        recyclerView.getAdapter().notifyItemChanged(items.size() - 1);
+                        if(post != null) {
+                            target.bindPost(post);
+                        }
+                        try {
+                            items.set(target.getAdapterPosition(), post);
+                        }
+                        catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                        recyclerView.getAdapter().notifyDataSetChanged();
                     }
                 });
 
@@ -61,7 +65,7 @@ public class PostListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_post_list, container, false);
 
-        if (view instanceof RecyclerView) {
+        if(view instanceof RecyclerView) {
             Context context = view.getContext();
             recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
@@ -71,13 +75,21 @@ public class PostListFragment extends Fragment {
     }
 
     private void setupAdapter() {
-        if (isAdded()) {
+        if(isAdded()) {
+            items.add(null);
             PostAdapter adapter = new PostAdapter();
-
             adapter.setOnBottomReachedListener(new OnBottomReachedListener() {
                 @Override
                 public void onBottomReached(int position) {
-
+                    items.add(null);
+                    //     if(!recyclerView.isComputingLayout())
+                    //        recyclerView.getAdapter().notifyDataSetChanged();
+                    recyclerView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            recyclerView.getAdapter().notifyDataSetChanged();
+                        }
+                    });
                 }
             });
             recyclerView.setAdapter(adapter);
@@ -96,11 +108,8 @@ public class PostListFragment extends Fragment {
         postDownloader.clearQueue();
     }
 
-    public class PostAdapter extends RecyclerView.Adapter<ViewHolder> implements OnBottomReachedListener {
+    public class PostAdapter extends RecyclerView.Adapter<ViewHolder> {
         OnBottomReachedListener onBottomReachedListener;
-
-        public PostAdapter() {
-        }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -121,7 +130,6 @@ public class PostListFragment extends Fragment {
                             holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
                             items.get(position).setLiked(true);
                             Database.saveLikedPost(items.get(position));
-                         //   notifyItemChanged(position);
                         }
                         else {
                             if(items.get(position).isLiked()) {
@@ -133,59 +141,57 @@ public class PostListFragment extends Fragment {
                     }
                 }
             });
-            ArrayList<Integer> likedIds = Database.getLikedPostsIds();
-     //       if(likedIds.size() > 0)
-               // if(likedIds.contains(items.get(holder.getAdapterPosition()).getId()))
-            //if(items.size() > !holder.getAdapterPosition() && items.get(holder.getAdapterPosition()).isLiked())
-      //              holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
 
             if(items.size() > position && items.get(position) != null) {
-                holder.bindDrawable(new BitmapDrawable(getResources(), items.get(position).getImage()));
-                if(likedIds.size() > 0)
-                    holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
+                holder.bindPost(items.get(position));
             }
             else {
                 postDownloader.getPost(holder, position);
             }
 
-            if (position == items.size() - 1 || items.size() == 0) {
+            if(position == items.size() - 1 || items.size() == 0) {
                 onBottomReachedListener.onBottomReached(position);
-                //                notifyDataSetChanged();
             }
         }
 
         @Override
         public int getItemCount() {
-            return postCount;
+            return items.size();
         }
 
         public void setOnBottomReachedListener(OnBottomReachedListener onBottomReachedListener) {
             this.onBottomReachedListener = onBottomReachedListener;
         }
-
-        @Override
-        public void onBottomReached(int position) {
-            postCount++;
-            postDownloader.getPost((ViewHolder) recyclerView.findViewHolderForAdapterPosition(position), position);
-            recyclerView.getAdapter().notifyDataSetChanged();
-        }
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        public ImageView imageView;
-        public ImageView likeView;
+        private ImageView imageView;
+        private ImageView likeView;
+        private TextView postText;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
+            postText = view.findViewById(R.id.postText);
             imageView = view.findViewById(R.id.image);
             likeView = view.findViewById(R.id.like);
         }
 
-        public void bindDrawable(Drawable drawable) {
-            imageView.setImageDrawable(drawable);
-            //                notifyDataSetChanged();
+        public void bindPost(Post post) {
+            imageView.setImageDrawable(new BitmapDrawable(getResources(), post.getImage()));
+            if(post.getText().length() == 0) {
+                postText.setVisibility(View.GONE);
+            }
+            else {
+                postText.setText(post.getText());
+            }
+            ArrayList<Integer> likedIds = Database.getLikedPostsIds();
+            if(likedIds.size() > 0) {
+                if(likedIds.contains(post.getId())) {
+                    likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
+                }
+            }
         }
     }
 
