@@ -16,7 +16,7 @@ import java.util.Set;
  * Created by user2 on 29.05.2018.
  */
 
-public class Post {
+public class Post{
     int id;
     String text;
     long postMillis;
