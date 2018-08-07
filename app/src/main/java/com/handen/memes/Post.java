@@ -16,7 +16,7 @@ import java.util.Set;
  * Created by user2 on 29.05.2018.
  */
 
-public class Post{
+public class Post {
     int id;
     String text;
     long postMillis;
@@ -80,15 +80,14 @@ public class Post{
         if (attachments.length() > 1)
             throw new Exception("У поста более одного прикрепления");
         JSONObject attachment = attachments.getJSONObject(0);
-        //Set<String> set = attachment.getJSONObject("photo").().keySet();
-        Set<String> set = new HashSet<>();
 
+        Set<String> set = new HashSet<>();
         JSONArray values = attachment.getJSONObject("photo").names();
-/*        for (int i = 0; i < values.length(); i++) {
+        for (int i = 0; i < values.length(); i++) {
             set.add(values.getString(i));
         }
-        String max = "";
 
+        String max = "";
         int maxSum = 0;
         for (String s : set) {
             int currentSum = 0;
@@ -98,11 +97,11 @@ public class Post{
                 maxSum = currentSum;
             }
         }
-        */
 
-        // String path = (JSONObject)values.get().toString();
-        String path = (String) attachment.getJSONObject("photo").get("photo_1280");
+        String path = (String) attachment.getJSONObject("photo").get(max);
 
+        //       String path = (String) attachment.getJSONObject("photo").get("photo_1280");
+        //String path = (String) attachment.getJSONObject("photo").get("photo_1280");
         return path;
     }
 
@@ -148,6 +147,10 @@ public class Post{
 
     public int getId() {
         return id;
+    }
+
+    public String getText() {
+        return text;
     }
 
     public ContentValues toContentValues() {
