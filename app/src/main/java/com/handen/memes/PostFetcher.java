@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Класс, отвечающий за определение и скачивание лучших постов
+ *
  * Created by Vanya on 29.05.2018.
  */
 
@@ -49,7 +51,7 @@ public class PostFetcher {
 
         ArrayList<VKRequest> requests = new ArrayList<>();
 
- //       for(int i = 0; i < FETCHCOUNT; i++) { //TODO в первый раз посылается 40 запросов, это слишком много. Если g.getLastPostDownloadedMillis(), значит запускается первый раз.
+      //  for(int i = 0; i < FETCHCOUNT; i++) { //TODO в первый раз посылается 40 запросов, это слишком много. Если g.getLastPostDownloadedMillis() == 0, значит запускается первый раз.
             for(Group g : groups) {
                 if(g.getLastPostDownloadedMillis() < endMillis) {
                     requests.add(generateRequest(g.getId(), g.getPostDownloadedCount()));
@@ -57,7 +59,7 @@ public class PostFetcher {
             }
             startMillis -= period;
             endMillis -= period;
-   //     }
+      //  }
 
         if(requests.size() > 0) {
             generateAndSendBatch(requests);
@@ -99,7 +101,7 @@ public class PostFetcher {
                 JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
 
                 long groupId = postsArray.getJSONObject(0).getLong("owner_id");
-
+                /*
                 for(Group group : groups) {
                     if(group.getId() == groupId) {
                         group.setPostDownloadedCount(group.getPostDownloadedCount() + POSTQUERYCOUNT);
@@ -107,6 +109,7 @@ public class PostFetcher {
                         break;
                     }
                 }
+                */
 
                 //Каждый пост мы проверяем, подходит ли он и добавляем в postsPool
                 for(int j = 0; j < postsArray.length(); j++) {
@@ -116,12 +119,20 @@ public class PostFetcher {
                             continue;
                         }
                     }
-                    //Умножаем на 1000, т.к. ВК возвращает секунды, а не милли
+                    //Умножаем на 1000, т.к. ВК возвращает секунды, а не миллисекунды
                     long postDate = postObject.getLong("date") * 1000;
                     if(postDate > endMillis) {
                         continue;
                     }
                     if(postDate < startMillis) {
+                        for(Group group : groups) {
+                            if(group.getId() == groupId) {
+                            //    group.setPostDownloadedCount(group.getPostDownloadedCount() + POSTQUERYCOUNT);
+                                group.setPostDownloadedCount(group.getPostDownloadedCount() + j);
+                                group.setLastPostDownloadedMillis(postsArray.getJSONObject(postsArray.length() - 1).getLong("date") * 1000);
+                                break;
+                            }
+                        }
                         break;
                     }
                     if(checkPost(postObject)) {
@@ -137,14 +148,14 @@ public class PostFetcher {
     }
 
     private void queryAndSelectPosts(ArrayList<Post> posts) {
-        Collections.sort(posts, new Comparator<Post>() {
+        Collections.sort(posts, new Comparator<Post>() { //Сортируем в обратном порядке, от большего к меньшему
             @Override
             public int compare(Post p1, Post p2) {
                 if(p1.getPostMillis() > p2.getPostMillis()) {
-                    return 1;
+                    return -1;
                 }
                 if(p1.getPostMillis() < p2.getPostMillis()) {
-                    return -1;
+                    return 1;
                 }
                 return 0;
             }

@@ -2,9 +2,7 @@ package com.handen.memes;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,7 +15,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PostListFragment extends Fragment {
+public class PostListFragment extends Fragment implements PostFetcher.OnPostsSelectedListener{
     private RecyclerView recyclerView;
 
     private List<Item> items = new ArrayList<>();
@@ -35,7 +33,8 @@ public class PostListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemsTask(pageCount++).execute(); //TODO Перенести в onCreate
+        new PostFetcher(pageCount++, PostListFragment.this).fetchItems();
+     //   new FetchItemsTask(pageCount++).execute(); //TODO Перенести в onCreate
     }
 
     @Override
@@ -57,7 +56,7 @@ public class PostListFragment extends Fragment {
             adapter.setOnBottomReachedListener(new OnBottomReachedListener() {
                 @Override
                 public void onBottomReached(int position) {
-                    new FetchItemsTask(pageCount++).execute();
+                    new PostFetcher(pageCount++, PostListFragment.this).fetchItems();
                 }
             });
             recyclerView.setAdapter(adapter);
@@ -72,6 +71,13 @@ public class PostListFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
+    }
+
+    @Override
+    public void onPostSelected(ArrayList<Item> mItems) {
+        items.addAll(mItems);
+        if(mItems.size() > 0)
+            recyclerView.getAdapter().notifyDataSetChanged();
     }
 
     public class PostAdapter extends RecyclerView.Adapter<ViewHolder> implements OnBottomReachedListener{
@@ -123,7 +129,7 @@ public class PostListFragment extends Fragment {
 
         @Override
         public void onBottomReached(int position) {
-            new FetchItemsTask(pageCount++).execute();
+            new PostFetcher(pageCount++, PostListFragment.this).fetchItems();
         }
     }
 
@@ -145,7 +151,7 @@ public class PostListFragment extends Fragment {
     public interface OnBottomReachedListener {
         void onBottomReached(int position);
     }
-
+/*
     public class FetchItemsTask extends AsyncTask<Void, Void, List<Item>> {
         int pageNumber;
 
@@ -171,7 +177,7 @@ public class PostListFragment extends Fragment {
                     e.printStackTrace();
                 }
             }
-            */
+
             return new ArrayList<>();
         }
 
@@ -182,4 +188,5 @@ public class PostListFragment extends Fragment {
                 recyclerView.getAdapter().notifyDataSetChanged();
         }
     }
+*/
 }
