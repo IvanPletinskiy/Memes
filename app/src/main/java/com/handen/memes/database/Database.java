@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 
 import com.handen.memes.App;
 import com.handen.memes.Group;
+import com.handen.memes.Item;
 import com.handen.memes.Post;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import static com.handen.memes.database.Schema.GroupsTable.GROUPSTABLE;
 import static com.handen.memes.database.Schema.GroupsTable.ID;
 import static com.handen.memes.database.Schema.GroupsTable.NAME;
 import static com.handen.memes.database.Schema.GroupsTable.SELECTED;
+import static com.handen.memes.database.Schema.ImageTable.IMAGETABLE;
 
 /**
  * Created by user2 on 29.05.2018.
@@ -181,4 +183,23 @@ public class Database {
         mDatabase.delete(Schema.PostsTable.POSTSTABLE, "id = " + post.getId(), null);
     }
 
+    public static boolean containsImage(String imageUrl) {
+        String[] columns = new String[1];
+        columns[0] = Schema.ImageTable.IMAGEURL;
+        Cursor cursor = mDatabase.query(IMAGETABLE,
+                columns,
+                Schema.ImageTable.IMAGEURL + " = '" +  imageUrl + "'",
+                null,
+                null,
+                null,
+                null
+                );
+        boolean isNotEmpty = cursor.moveToFirst();
+        cursor.close();
+        return isNotEmpty;
+    }
+
+    public static void saveImage(Item item, Bitmap image) {
+        mDatabase.insert(Schema.ImageTable.IMAGETABLE, null, item.toContentValues(image));
+    }
 }

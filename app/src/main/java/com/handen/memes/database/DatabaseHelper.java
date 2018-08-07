@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import static com.handen.memes.database.Schema.GroupsTable.GROUPSTABLE;
+import static com.handen.memes.database.Schema.ImageTable.IMAGETABLE;
 import static com.handen.memes.database.Schema.PostsTable.POSTSTABLE;
 
 /**
@@ -39,6 +40,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Schema.PostsTable.REPOSTS + "," +
                 Schema.PostsTable.LIKED + "," +
                 Schema.PostsTable.IMAGE +
+                ")"
+        );
+        db.execSQL("create table " + IMAGETABLE + "(" +
+      //          Schema.ImageTable.ID + "," +
+                Schema.ImageTable.IMAGEURL + "," +
+                Schema.ImageTable.IMAGESIZE + "," +
+                Schema.ImageTable.IMAGE +
                 ")"
         );
     }

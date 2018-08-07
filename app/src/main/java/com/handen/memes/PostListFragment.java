@@ -1,8 +1,11 @@
 package com.handen.memes;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -12,10 +15,13 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.handen.memes.database.Database;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class PostListFragment extends Fragment implements PostFetcher.OnPostsSelectedListener{
+public class PostListFragment extends Fragment implements PostFetcher.OnPostsSelectedListener, ImageDownloader.ImageDownloadListener<PostListFragment.ViewHolder> {
+    private ImageDownloader<PostListFragment.ViewHolder> imageDownloader;
     private RecyclerView recyclerView;
 
     private List<Item> items = new ArrayList<>();
@@ -26,15 +32,24 @@ public class PostListFragment extends Fragment implements PostFetcher.OnPostsSel
     }
 
     public static PostListFragment newInstance() {
+
         return new PostListFragment();
+
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+
+        Handler responseHandler = new Handler();
+        imageDownloader = new ImageDownloader<>(responseHandler);
+        imageDownloader.setImageDownloadListener(PostListFragment.this);
+
+        imageDownloader.start();
+        imageDownloader.getLooper();
+
         new PostFetcher(pageCount++, PostListFragment.this).fetchItems();
-     //   new FetchItemsTask(pageCount++).execute(); //TODO Перенести в onCreate
     }
 
     @Override
@@ -52,7 +67,7 @@ public class PostListFragment extends Fragment implements PostFetcher.OnPostsSel
 
     private void setupAdapter() {
         if(isAdded()) {
-            PostAdapter adapter = new PostAdapter();
+            PostAdapter adapter = new PostAdapter(this);
             adapter.setOnBottomReachedListener(new OnBottomReachedListener() {
                 @Override
                 public void onBottomReached(int position) {
@@ -66,70 +81,76 @@ public class PostListFragment extends Fragment implements PostFetcher.OnPostsSel
     @Override
     public void onDestroy() {
         super.onDestroy();
+        imageDownloader.quit();
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        imageDownloader.clearQueue();
     }
 
     @Override
     public void onPostSelected(ArrayList<Item> mItems) {
         items.addAll(mItems);
-        if(mItems.size() > 0)
+        if(mItems.size() > 0) {
             recyclerView.getAdapter().notifyDataSetChanged();
+        }
     }
 
-    public class PostAdapter extends RecyclerView.Adapter<ViewHolder> implements OnBottomReachedListener{
-        OnBottomReachedListener onBottomReachedListener;
+    @Override
+    public void onImageDownloaded(ViewHolder target, Bitmap image) {
+        target.bindImage(image);
+        recyclerView.getAdapter().notifyItemChanged(target.getAdapterPosition());
+    }
 
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_post, parent, false);
-            return new ViewHolder(view);
+    class PostAdapter extends RecyclerView.Adapter<PostListFragment.ViewHolder> implements PostListFragment.OnBottomReachedListener {
+        private PostListFragment mPostListFragment;
+        PostListFragment.OnBottomReachedListener onBottomReachedListener;
+
+        public PostAdapter(PostListFragment postListFragment) {
+            mPostListFragment = postListFragment;
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, final int p) {
+        public PostListFragment.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_post, parent, false);
+            return new PostListFragment.ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final PostListFragment.ViewHolder holder, final int p) {
             final int position = holder.getAdapterPosition();
+            Item item = mPostListFragment.items.get(position);
             Drawable placeholder = holder.mView.getContext().getResources().getDrawable(R.drawable.placeholder);
             holder.imageView.setImageDrawable(placeholder);
-            holder.likeView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    /*
+            holder.postText.setText(item.getText());
 
-                        holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite));
-                        items.get(position).setLiked(true);
-                        Database.saveLikedPost(items.get(position));
+            if(Database.containsImage(item.getUrl())) {
+                //Показываем картинку
+            }
+            else {
+                //Отправляем запрос на скачивание
+                mPostListFragment.imageDownloader.addRequest(holder, item.getUrl());
+            }
 
-                        if(items.get(position).isLiked()) {
-                                holder.likeView.setImageDrawable(getResources().getDrawable(R.drawable.ic_favorite_border));
-                                items.get(position).setLiked(false);
-                                Database.deleteLikedPost(items.get(position));
-                        }
-                    }
-                    */
-                }
-            });
-
-            if (position == items.size() - 1) {
+            if(position == mPostListFragment.items.size() - 1) {
                 onBottomReachedListener.onBottomReached(position);
             }
         }
 
         @Override
         public int getItemCount() {
-            return items.size();
+            return mPostListFragment.items.size();
         }
 
-        public void setOnBottomReachedListener(OnBottomReachedListener onBottomReachedListener) {
+        public void setOnBottomReachedListener(PostListFragment.OnBottomReachedListener onBottomReachedListener) {
             this.onBottomReachedListener = onBottomReachedListener;
         }
 
         @Override
         public void onBottomReached(int position) {
-            new PostFetcher(pageCount++, PostListFragment.this).fetchItems();
+            new PostFetcher(mPostListFragment.pageCount++, mPostListFragment).fetchItems();
         }
     }
 
@@ -146,47 +167,13 @@ public class PostListFragment extends Fragment implements PostFetcher.OnPostsSel
             imageView = view.findViewById(R.id.image);
             likeView = view.findViewById(R.id.like);
         }
+
+        public void bindImage(Bitmap bitmap) {
+            imageView.setImageDrawable(new BitmapDrawable(getResources(), bitmap));
+        }
     }
 
     public interface OnBottomReachedListener {
         void onBottomReached(int position);
     }
-/*
-    public class FetchItemsTask extends AsyncTask<Void, Void, List<Item>> {
-        int pageNumber;
-
-        public FetchItemsTask(int pageNumber) {
-            this.pageNumber = pageNumber;
-        }
-
-        @Override
-        protected ArrayList<Item> doInBackground(Void... voids) {
-            Looper.prepare();
-            PostFetcher postFetcher = new PostFetcher(pageCount++, new PostFetcher.OnPostsSelectedListener(){
-                @Override
-                public void onPostSelected(ArrayList<Item> items) {
-                    onPostExecute(items);
-                }
-            });
-            postFetcher.fetchItems();
-        /*    while(!postFetcher.isDone()) {
-                try {
-                    Thread.sleep(100);
-                }
-                catch(InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            return new ArrayList<>();
-        }
-
-        @Override
-        protected void onPostExecute(List<Item> result) {
-            items.addAll(result);
-            if(result.size() > 0)
-                recyclerView.getAdapter().notifyDataSetChanged();
-        }
-    }
-*/
 }

@@ -25,4 +25,13 @@ public class Schema {
         public static final String LIKED = "liked";
         public static final String IMAGE = "image";
     }
+
+    public static final class ImageTable {
+        public static final String IMAGETABLE = "image";
+
+      //  public static final String ID = "id";
+        public static final String IMAGEURL = "url";
+        public static final String IMAGESIZE = "size";
+        public static final String IMAGE = "image";
+    }
 }

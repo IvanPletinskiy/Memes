@@ -36,37 +36,14 @@ import java.util.concurrent.ConcurrentMap;
  */
 
 public class PostDownloader<T> extends HandlerThread implements PostsPreparedListener {
-    private static final String TAG = "PostThread";
-
-    private static int POSTQUERYCOUNT = 25;
-
-    ArrayList<Group> groups;
 
     private static final int MESSSAGE_DOWNLOAD = 0;
     private Handler mRequestHandler;
     private Handler mResponseHandler;
     private ConcurrentMap<T, Integer> mRequestMap = new ConcurrentHashMap<>();
-    private PostDownloaderListener<T> postDownloaderListener;
-
-    private static ArrayList<Post> postsPool = new ArrayList<>();
-
-    public interface PostDownloaderListener<T> {
-        void onPostDownloaded(T target, Post post);
-    }
 
     public void setPostDownloaderListener(PostDownloaderListener<T> listener) {
         postDownloaderListener = listener;
-    }
-
-    public PostDownloader(Handler responseHandler) {
-        super(TAG);
-        mResponseHandler = responseHandler;
-        groups = Database.getGroupsIds();
-       // postsPool = Database.getPosts();
-    }
-
-    public void clearQueue() {
-        mRequestHandler.removeMessages(MESSSAGE_DOWNLOAD);
     }
 
     @SuppressLint("HandlerLeak")
@@ -117,141 +94,11 @@ public class PostDownloader<T> extends HandlerThread implements PostsPreparedLis
         }
     }
 
-    private void generateAndSendBatch(ArrayList<VKRequest> requests, final T target) {
-        VKRequest[] requestsArray = requests.toArray(new VKRequest[requests.size()]);
-        VKBatchRequest batchRequest = new VKBatchRequest(requestsArray);
-
-        final int offset = mRequestMap.get(target);
-        long currentMillis = new Date().getTime();
-        long period = Preferences.getPeriod();
-        /**
-         Стартовая дата, например 18:00
-         */
-        final long beginMillis = currentMillis - (offset + 1) * period;
-        /**
-         Конечная дата, например 18:30
-         */
-        final long endMillis = currentMillis - offset * period;
-
-        batchRequest.executeWithListener(new VKBatchRequest.VKBatchRequestListener() {
-            @Override
-            public void onComplete(VKResponse[] responses) {
-                super.onComplete(responses);
-                for(VKResponse resp : responses) {
-                    try {
-                        JSONArray postsArray = resp.json.getJSONObject("response").getJSONArray("items");
-
-                        long groupId = postsArray.getJSONObject(0).getLong("owner_id");
-
-                        for(Group group : groups) {
-                            if(group.getId() == groupId) {
-                                group.setPostDownloadedCount(group.getPostDownloadedCount() + POSTQUERYCOUNT);
-                                group.setLastPostDownloadedMillis(postsArray.getJSONObject(postsArray.length() - 1).getLong("date") * 1000);
-                            }
-                        }
-
-                        //Каждый пост мы проверяем, подходит ли он и добавляем в postsPool
-                        for(int j = 0; j < postsArray.length(); j++) {
-                            JSONObject postObject = postsArray.getJSONObject(j);
-                            if(postObject.has("is_pinned")) {
-                                if(postObject.getInt("is_pinned") == 1) {
-                                    continue;
-                                }
-                            }
-                            //Умножаем на 1000, т.к. ВК возвращает секунды, а не милли
-                            long postDate = postObject.getLong("date") * 1000;
-                            if(postDate > endMillis) {
-                                continue;
-                            }
-                            else {
-                                if(postDate < beginMillis) {
-                                    break;
-                                }
-                                else {
-                                    if(checkPost(postObject)) {
-                                        postsPool.add(Post.fromJSON(postObject));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                onPostsPrepared(target);
-            }
-        });
-    }
-
-    private boolean checkPost(JSONObject postObject) throws JSONException {
-        JSONArray attachments = postObject.getJSONArray(("attachments"));
-        if (attachments.length() > 1)
-            return false;
-        JSONObject attachment = attachments.getJSONObject(0);
-        //Set<String> set = attachment.getJSONObject("photo").().keySet();
-        Set<String> set = new HashSet<>();
-        if(!attachment.has("photo"))
-            return false;
-        return true; //TODO Сделать checkPost, проверять на рекламу, ссылки, слова текста и т.д. кол-во картинок
-    }
-
-    private VKRequest generateRequest(int id, int postDownloadedCount) {
-        return VKApi.wall().get(VKParameters.from(
-                VKApiConst.OWNER_ID, id, //Владелец группы
-                VKApiConst.COUNT, POSTQUERYCOUNT, //Кол-во постов
-                VKApiConst.OFFSET, postDownloadedCount));
-    }
-
     @Override
     public void onPostsPrepared(Object target) {
         int offset = mRequestMap.get((T) target);
         Post post = choosePost(getPeriodPosts(offset));
         new ImageDownloader(post, (T) target).execute();
-    }
-
-    private Post choosePost(ArrayList<Post> periodPosts) {
-        double maxValue = 0;
-        int maxPostIndex = 0;
-        for(int i = 0; i < periodPosts.size(); i++) {
-            long millis = new Date().getTime();
-            Post post = periodPosts.get(i);
-            long post1Millis = millis - post.getPostMillis();
-
-            double postValue = (((post.getLikes() + 1) * 100) + ((post.getReposts() + 1) * 500) / post1Millis);
-
-            if(i == 0) {
-                maxValue = postValue;
-            }
-            if(postValue > maxValue) {
-                maxPostIndex = i;
-            }
-        }
-
-        if(periodPosts.size() > 0)
-            return periodPosts.get(maxPostIndex);
-        else
-            return null;
-    }
-
-    private ArrayList<Post> getPeriodPosts(Integer offset) {
-        long currentMillis = new Date().getTime();
-        long period = Preferences.getPeriod();
-        /**
-         Стартовая дата, например 18:00
-         */
-        final long beginMillis = currentMillis - (offset + 1) * period;
-        /**
-         Конечная дата, например 18:30
-         */
-        final long endMillis = currentMillis - offset * period;
-        ArrayList<Post> ret = new ArrayList<>();
-        for(Post p : postsPool) {
-            if(p.getPostMillis() > beginMillis && p.getPostMillis() < endMillis)
-                ret.add(p);
-        }
-        return ret;
     }
 
     public Bitmap downloadImage(String path) {
